@@ -1,16 +1,30 @@
+using System.Globalization;
+
 namespace EverySecondLetter.Services;
 
 public sealed class WordsService
 {
-    // A tiny built-in dictionary for demo purposes.
-    // Replace with file/DB-backed validation later without touching the game rules.
-    private readonly HashSet<string> _words = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "hello","world","test","tests","word","game","games","letter","letters",
-        "spel","ord","ordspel","testning","kod","koda","koder","api","backend","frontend",
-        "hej","du","jag","vi","ni","den","det","som","kan","ska","bra","kul"
-    };
+    private readonly HashSet<string> _words;
 
-    public bool IsValid(string word) =>
-        !string.IsNullOrWhiteSpace(word) && _words.Contains(word.Trim());
+    public WordsService(IWebHostEnvironment env)
+    {
+        var path = Path.Combine(env.ContentRootPath, "wordlists", "enable1.txt");
+
+        if (!File.Exists(path))
+            throw new InvalidOperationException($"Word list not found at {path}");
+
+        _words = File.ReadLines(path)
+            .Select(w => w.Trim())
+            .Where(w => w.Length >= 3)                 // disallow words shorter than 3
+            .Select(w => w.ToLowerInvariant())         // normalize
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool IsValid(string word)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+            return false;
+
+        return _words.Contains(word.Trim().ToLowerInvariant());
+    }
 }
