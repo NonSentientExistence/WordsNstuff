@@ -11,6 +11,9 @@
    psql "<YOUR CONNECTION STRING>" -f sql/001_init.sql
 
 ## Configure connection string
+
+_Right now the connection string is defaulted in Properties/launchSettings.json but if you want to handle it properly:_ 
+
 Either:
 - set environment variable DATABASE_URL (postgres://user:pass@host:5432/dbname)
 or
