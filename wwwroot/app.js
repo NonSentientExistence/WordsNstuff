@@ -93,7 +93,8 @@ function render(game) {
 
   // Track completed words
   if (state.previousGame) {
-    // Detect word completion: transition from PendingDispute to InProgress
+    // Detect word completion: transition FROM PendingDispute TO InProgress
+    // This means the dispute was just resolved, so points are now awarded
     if (state.previousGame.status === "PendingDispute" && game.status === "InProgress") {
       const completedWord = state.previousGame.pendingWord;
       if (completedWord) {
@@ -112,8 +113,13 @@ function render(game) {
           pointsAwarded = p2DeltaScore;
         }
 
-        // Validate the word asynchronously
-        validateAndRecordWord(completedWord, scoringPlayer || "Disputed", pointsAwarded, state.gameId);
+        // Only record if someone actually scored (not disputed)
+        if (pointsAwarded > 0) {
+          validateAndRecordWord(completedWord, scoringPlayer, pointsAwarded, state.gameId);
+        } else {
+          // Word was disputed and found invalid - still record but as disputed
+          recordDisputedWord(completedWord);
+        }
       }
     }
   }
@@ -213,6 +219,16 @@ async function validateAndRecordWord(word, player, points, gameId) {
     });
   }
   
+  renderWordHistory();
+}
+
+function recordDisputedWord(word) {
+  state.completedWords.push({
+    word: word,
+    player: "Disputed",
+    points: 0,
+    valid: null,
+  });
   renderWordHistory();
 }
 
