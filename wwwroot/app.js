@@ -8,7 +8,7 @@ const els = {
   game: document.getElementById("game"),
 
   statusOut: document.getElementById("statusOut"),
-  activeOut: document.getElementById("activeOut"),
+  activeMarquee: document.getElementById("activeMarquee"),
   wordOut: document.getElementById("wordOut"),
   pendingOut: document.getElementById("pendingOut"),
   p1Out: document.getElementById("p1Out"),
@@ -19,9 +19,19 @@ const els = {
   letterIn: document.getElementById("letterIn"),
   playBtn: document.getElementById("playBtn"),
   claimBtn: document.getElementById("claimBtn"),
+  gameIdGameOut: document.getElementById("gameIdGameOut"),
+  copyGameIdBtn: document.getElementById("copyGameIdBtn"),
+  gameLinkOut: document.getElementById("gameLinkOut"),
+  copyGameLinkBtn: document.getElementById("copyGameLinkBtn"),
   disputeRow: document.getElementById("disputeRow"),
   acceptBtn: document.getElementById("acceptBtn"),
   disputeBtn: document.getElementById("disputeBtn"),
+  leaveBtn: document.getElementById("leaveBtn"),
+
+  rulesBtn: document.getElementById("rulesBtn"),
+  rulesPanel: document.getElementById("rulesPanel"),
+  closeRulesBtn: document.getElementById("closeRulesBtn"),
+  rulesContent: document.getElementById("rulesContent"),
 
   log: document.getElementById("log"),
 };
@@ -49,6 +59,8 @@ function setCreds(gameId, playerToken) {
   els.joinGameId.value = gameId ?? "";
 
   if (gameId && playerToken) {
+    updateGameLink();
+    els.setup.classList.add("hidden");
     els.game.classList.remove("hidden");
     startPolling();
   }
@@ -75,7 +87,18 @@ function render(game) {
   if (!game) return;
 
   els.statusOut.textContent = game.status;
-  els.activeOut.textContent = game.activePlayerId;
+  
+  // Display "Player 1" or "Player 2" in the marquee
+  let activePlayerDisplay = "-";
+  if (game.activePlayerId === game.player1Id) {
+    activePlayerDisplay = "Player 1";
+  } else if (game.activePlayerId === game.player2Id) {
+    activePlayerDisplay = "Player 2";
+  }
+  els.activeMarquee.textContent = activePlayerDisplay;
+  
+  els.gameIdGameOut.textContent = state.gameId || "-";
+  updateGameLink();
   els.wordOut.textContent = game.currentWord || "(empty)";
 
   els.p1Out.textContent = game.player1Id;
@@ -97,13 +120,13 @@ function render(game) {
   els.disputeRow.classList.toggle("hidden", !canRespond);
 
   const myTurn = state.playerToken &&
-      game.activePlayerId === state.playerToken &&
-      game.status === "InProgress";
+    game.activePlayerId === state.playerToken &&
+    game.status === "InProgress";
 
   const canClaimAfterLast =
-      state.playerToken &&
-      game.status === "InProgress" &&
-      game.lastLetterPlayerId === state.playerToken;
+    state.playerToken &&
+    game.status === "InProgress" &&
+    game.lastLetterPlayerId === state.playerToken;
 
   els.playBtn.disabled = !myTurn;
   els.letterIn.disabled = !myTurn;
@@ -129,13 +152,22 @@ function startPolling() {
   stopPolling();
   refresh().catch(e => log(`refresh error: ${e.message}`));
   state.pollTimer = setInterval(() => {
-    refresh().catch(() => {});
+    refresh().catch(() => { });
   }, 800);
 }
 
 function stopPolling() {
   if (state.pollTimer) clearInterval(state.pollTimer);
   state.pollTimer = null;
+}
+
+function updateGameLink() {
+  if (state.gameId) {
+    const link = `${window.location.origin}/?join=${state.gameId}`;
+    els.gameLinkOut.textContent = link;
+  } else {
+    els.gameLinkOut.textContent = "-";
+  }
 }
 
 // --- Actions ---
@@ -198,10 +230,77 @@ els.disputeBtn.addEventListener("click", async () => {
   } catch (e) { log(e.message); }
 });
 
+els.copyGameIdBtn.addEventListener("click", () => {
+  if (state.gameId) {
+    navigator.clipboard.writeText(state.gameId).then(() => {
+      log(`Copied game ID: ${state.gameId}`);
+    }).catch(err => {
+      log(`Failed to copy: ${err.message}`);
+    });
+  }
+});
+
+els.copyGameLinkBtn.addEventListener("click", () => {
+  const linkText = els.gameLinkOut.textContent;
+  if (linkText && linkText !== "-") {
+    navigator.clipboard.writeText(linkText).then(() => {
+      log(`Copied game link`);
+    }).catch(err => {
+      log(`Failed to copy: ${err.message}`);
+    });
+  }
+});
+
+els.leaveBtn.addEventListener("click", () => {
+  console.log("Leave button clicked");
+  stopPolling();
+  state.gameId = null;
+  state.game = null;
+  els.gameIdOut.textContent = "-";
+  els.gameLinkOut.textContent = "-";
+  els.game.classList.add("hidden");
+  els.setup.classList.remove("hidden");
+  window.scrollTo(0, 0);
+  console.log("Game cleared");
+});
+
+// Rules panel
+els.rulesBtn.addEventListener("click", async () => {
+  if (els.rulesContent.innerHTML === "") {
+    try {
+      const response = await fetch("/gameplay-and-rules.md");
+      const markdown = await response.text();
+      els.rulesContent.innerHTML = marked.parse(markdown);
+    } catch (err) {
+      els.rulesContent.innerHTML = "<p>Error loading rules.</p>";
+    }
+  }
+  els.rulesPanel.classList.remove("hidden");
+});
+
+els.closeRulesBtn.addEventListener("click", () => {
+  els.rulesPanel.classList.add("hidden");
+});
+
+els.rulesPanel.addEventListener("click", (e) => {
+  if (e.target === els.rulesPanel) {
+    els.rulesPanel.classList.add("hidden");
+  }
+});
+
 // try restore from localStorage
 (function init() {
   const saved = JSON.parse(localStorage.getItem("esl_creds") || "null");
   if (saved?.gameId && saved?.playerToken) setCreds(saved.gameId, saved.playerToken);
+
+  // Check for join parameter in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinGameId = urlParams.get("join");
+  if (joinGameId) {
+    // Auto-join the game
+    els.joinGameId.value = joinGameId;
+    setTimeout(() => els.joinBtn.click(), 100);
+  }
 
   // persist changes
   const persist = () => localStorage.setItem("esl_creds", JSON.stringify({ gameId: state.gameId, playerToken: state.playerToken }));

@@ -52,6 +52,12 @@ app.UseStaticFiles();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+app.MapGet("/client-ip", (HttpContext ctx) =>
+{
+    var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    return Results.Ok(new { ip });
+});
+
 app.MapPost("/games", async (GamesService games) =>
 {
     var result = await games.CreateGameAsync();
