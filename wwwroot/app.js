@@ -33,6 +33,7 @@ const els = {
   closeRulesBtn: document.getElementById("closeRulesBtn"),
   rulesContent: document.getElementById("rulesContent"),
 
+  wordHistory: document.getElementById("wordHistory"),
   log: document.getElementById("log"),
 };
 
@@ -41,6 +42,8 @@ let state = {
   playerToken: null,
   game: null,
   pollTimer: null,
+  previousGame: null,
+  completedWords: [],
 };
 
 function log(msg) {
@@ -51,6 +54,8 @@ function log(msg) {
 function setCreds(gameId, playerToken) {
   state.gameId = gameId;
   state.playerToken = playerToken;
+  state.previousGame = null;
+  state.completedWords = [];
 
   els.gameIdOut.textContent = gameId ?? "-";
   els.playerTokenOut.textContent = playerToken ?? "-";
@@ -85,6 +90,41 @@ async function api(path, options = {}) {
 
 function render(game) {
   if (!game) return;
+
+  // Track completed words
+  if (state.previousGame) {
+    // Detect word completion: transition from PendingDispute to InProgress
+    if (state.previousGame.status === "PendingDispute" && game.status === "InProgress") {
+      const completedWord = state.previousGame.pendingWord;
+      if (completedWord) {
+        // Figure out who scored by comparing scores
+        const p1DeltaScore = game.player1Score - state.previousGame.player1Score;
+        const p2DeltaScore = game.player2Score - state.previousGame.player2Score;
+
+        let scoringPlayer = null;
+        let pointsAwarded = 0;
+
+        if (p1DeltaScore > 0) {
+          scoringPlayer = "Player 1";
+          pointsAwarded = p1DeltaScore;
+        } else if (p2DeltaScore > 0) {
+          scoringPlayer = "Player 2";
+          pointsAwarded = p2DeltaScore;
+        }
+
+        // Record completed word
+        state.completedWords.push({
+          word: completedWord,
+          player: scoringPlayer || "Disputed",
+          points: pointsAwarded,
+        });
+
+        renderWordHistory();
+      }
+    }
+  }
+
+  state.previousGame = JSON.parse(JSON.stringify(game));
 
   els.statusOut.textContent = game.status;
   
@@ -151,6 +191,37 @@ function render(game) {
   els.letterIn.disabled = !myTurn;
 
   if (myTurn) els.letterIn.focus();
+}
+
+function renderWordHistory() {
+  els.wordHistory.innerHTML = "";
+  
+  if (state.completedWords.length === 0) {
+    els.wordHistory.innerHTML = '<div class="word-history-empty">No completed words yet</div>';
+    return;
+  }
+
+  state.completedWords.forEach((entry, idx) => {
+    const item = document.createElement("div");
+    item.className = "word-history-item";
+    
+    const word = document.createElement("span");
+    word.className = "word-history-word";
+    word.textContent = entry.word.toUpperCase();
+    
+    const meta = document.createElement("span");
+    meta.className = "word-history-meta";
+    
+    if (entry.points > 0) {
+      meta.textContent = `${entry.player} +${entry.points}`;
+    } else {
+      meta.textContent = "Disputed";
+    }
+    
+    item.appendChild(word);
+    item.appendChild(meta);
+    els.wordHistory.appendChild(item);
+  });
 }
 
 async function refresh() {
@@ -270,8 +341,11 @@ els.leaveBtn.addEventListener("click", () => {
   stopPolling();
   state.gameId = null;
   state.game = null;
+  state.previousGame = null;
+  state.completedWords = [];
   els.gameIdOut.textContent = "-";
   els.gameLinkOut.textContent = "-";
+  els.wordHistory.innerHTML = "";
   els.game.classList.add("hidden");
   els.setup.classList.remove("hidden");
   window.scrollTo(0, 0);
