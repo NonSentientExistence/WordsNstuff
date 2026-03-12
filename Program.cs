@@ -28,6 +28,10 @@ builder.Services.AddSingleton<GamesService>();
 
 var app = builder.Build();
 
+// ---- Initialize database ----
+var ds = app.Services.GetRequiredService<NpgsqlDataSource>();
+await SeedDb.InitializeAsync(ds);
+
 // ---- Lightweight API error -> ProblemDetails ----
 app.Use(async (ctx, next) =>
 {
