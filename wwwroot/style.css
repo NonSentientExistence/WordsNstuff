@@ -51,6 +51,16 @@ button:hover {
   background: #eef1fa;
 }
 
+button[aria-pressed="true"] {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+button[aria-pressed="true"]:hover {
+  background: #1f2937;
+}
+
 button.danger {
   background: #fff1f1;
   border-color: #ffd2d2;
@@ -73,6 +83,10 @@ code {
 
 .hidden {
   display: none;
+}
+
+.debug-hidden {
+  display: none !important;
 }
 
 .grid2 {

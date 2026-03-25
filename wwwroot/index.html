@@ -13,7 +13,10 @@
   <main>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
       <h1 style="margin: 0;">EverySecondLetter</h1>
-      <button id="rulesBtn" style="padding: 8px 16px;">Rules</button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="debugToggleBtn" type="button" aria-pressed="false" style="padding: 8px 16px;">Debug</button>
+        <button id="rulesBtn" style="padding: 8px 16px;">Rules</button>
+      </div>
     </div>
 
     <section class="card" id="setup">
@@ -41,7 +44,7 @@
     <section class="card hidden" id="game">
       <h2>Game</h2>
 
-      <div class="row">
+      <div class="row debug">
         <label>Game ID (share to join)</label>
         <code id="gameIdGameOut">-</code>
         <button id="copyGameIdBtn">Copy</button>
@@ -67,9 +70,9 @@
           <div class="kv"><span>Pending</span><code id="pendingOut">-</code></div>
         </div>
         <div>
-          <div class="kv"><span>Player 1</span><code id="p1Out">-</code></div>
+          <div class="kv debug"><span>Player 1</span><code id="p1Out">-</code></div>
           <div class="kv"><span>Player 1 score</span><code id="p1ScoreOut">-</code></div>
-          <div class="kv"><span>Player 2</span><code id="p2Out">-</code></div>
+          <div class="kv debug"><span>Player 2</span><code id="p2Out">-</code></div>
           <div class="kv"><span>Player 2 score</span><code id="p2ScoreOut">-</code></div>
           <div class="kv"><span>You are</span><code id="youOut">-</code></div>
           <div class="kv"><span>Standing</span><code id="standingOut">-</code></div>

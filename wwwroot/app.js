@@ -2,6 +2,7 @@ const els = {
   createBtn: document.getElementById("createBtn"),
   joinBtn: document.getElementById("joinBtn"),
   joinGameId: document.getElementById("joinGameId"),
+  debugToggleBtn: document.getElementById("debugToggleBtn"),
   gameIdOut: document.getElementById("gameIdOut"),
   playerTokenOut: document.getElementById("playerTokenOut"),
   setup: document.getElementById("setup"),
@@ -39,13 +40,33 @@ const els = {
   log: document.getElementById("log"),
 };
 
+const debugEls = Array.from(document.querySelectorAll(".debug"));
+const DEBUG_STORAGE_KEY = "esl_debug_visible";
+
 let state = {
   gameId: null,
   playerToken: null,
   game: null,
   pollTimer: null,
   previousGame: null,
+  debugVisible: false,
 };
+
+function setDebugVisible(isVisible) {
+  state.debugVisible = isVisible;
+  document.body.classList.toggle("debug-visible", isVisible);
+  debugEls.forEach((element) => {
+    element.classList.toggle("debug-hidden", !isVisible);
+  });
+  els.debugToggleBtn.setAttribute("aria-pressed", String(isVisible));
+  els.debugToggleBtn.textContent = isVisible ? "Debug on" : "Debug off";
+
+  try {
+    localStorage.setItem(DEBUG_STORAGE_KEY, JSON.stringify(isVisible));
+  } catch {
+    // Ignore storage failures and keep the toggle working for this session.
+  }
+}
 
 function log(msg) {
   const ts = new Date().toLocaleTimeString();
@@ -387,6 +408,10 @@ els.leaveBtn.addEventListener("click", () => {
   console.log("Game cleared");
 });
 
+els.debugToggleBtn.addEventListener("click", () => {
+  setDebugVisible(!state.debugVisible);
+});
+
 // Rules panel
 els.rulesBtn.addEventListener("click", async () => {
   if (els.rulesContent.innerHTML === "") {
@@ -413,6 +438,14 @@ els.rulesPanel.addEventListener("click", (e) => {
 
 // try restore from localStorage
 (function init() {
+  let savedDebugVisible = false;
+  try {
+    savedDebugVisible = JSON.parse(localStorage.getItem(DEBUG_STORAGE_KEY) || "false");
+  } catch {
+    savedDebugVisible = false;
+  }
+  setDebugVisible(savedDebugVisible);
+
   const saved = JSON.parse(localStorage.getItem("esl_creds") || "null");
   if (saved?.gameId && saved?.playerToken) setCreds(saved.gameId, saved.playerToken);
 
