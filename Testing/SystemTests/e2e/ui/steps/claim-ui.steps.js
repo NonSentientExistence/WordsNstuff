@@ -9,6 +9,13 @@ const state = {
   player2Token: null,
 };
 
+async function debugPause(page, message) {
+  if (process.env.DEBUG_MODE) {
+    console.log(`[DEBUG] ${message}`);
+    await page.pause();
+  }
+}
+
 async function postJson(request, url, body, token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['X-Player-Token'] = token;
@@ -54,9 +61,13 @@ Then('spelare 2 ser claim-knappen som inaktiverad', async ({ page }) => {
   }, { gameId: state.gameId, playerToken: state.player2Token });
 
   await page.goto('/');
+  await debugPause(page, 'Page loaded - verify game state');
 
   await expect(page.locator('#game')).toBeVisible();
+  await debugPause(page, 'Game visible - check the game board');
+
   await expect(page.locator('#claimBtn')).toBeDisabled();
+  await debugPause(page, 'Claim button verified as disabled');
 });
 
 Then('spelare 1 ser claim-knappen som inaktiverad under minimiordlängd', async ({ page }) => {
@@ -65,7 +76,11 @@ Then('spelare 1 ser claim-knappen som inaktiverad under minimiordlängd', async 
   }, { gameId: state.gameId, playerToken: state.player1Token });
 
   await page.goto('/');
+  await debugPause(page, 'Page loaded - verify game state');
 
   await expect(page.locator('#game')).toBeVisible();
+  await debugPause(page, 'Game visible - check the game board');
+
   await expect(page.locator('#claimBtn')).toBeDisabled();
+  await debugPause(page, 'Claim button verified as disabled (below min word length)');
 });

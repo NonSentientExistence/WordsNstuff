@@ -13,6 +13,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5010',
     trace: 'on-first-retry',
+    slowMo: process.env.SLOW_MODE ? 1000 : 0,
   },
   reporter: [['html', { open: 'never' }]],
+  globalTeardown: './playwright-global-teardown.js',
 });
