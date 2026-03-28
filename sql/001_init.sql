@@ -30,6 +30,7 @@ create table if not exists contributions (
 );
 
 create table if not exists word_history (
+  id uuid,
   game_id uuid not null references games(id) on delete cascade,
   word text not null,
   claimer_id uuid not null,
@@ -37,6 +38,22 @@ create table if not exists word_history (
   p2_points int not null default 0,
   is_valid boolean not null,
   created_at timestamptz not null
+);
+
+alter table word_history
+  add column if not exists id uuid,
+  add column if not exists points_json jsonb not null default '[]'::jsonb;
+
+create table if not exists game_players (
+  game_id uuid not null references games(id) on delete cascade,
+  player_id uuid not null,
+  turn_order int not null,
+  score int not null default 0,
+  accepts_left int not null default 5,
+  disputes_left int not null default 5,
+  joined_at timestamptz not null,
+  primary key (game_id, player_id),
+  unique (game_id, turn_order)
 );
 
 -- track remaining accepts/disputes for each player (starts at 5 each)

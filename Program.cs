@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Npgsql;
 using EverySecondLetter.Services;
-using EverySecondLetter.DTOs;
+using EverySecondLetter.Gameplay.EverySecondLetter;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +24,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connStr).Build());
 builder.Services.AddSingleton<WordsService>();
+builder.Services.AddSingleton<EverySecondLetterGameDefinition>();
 builder.Services.AddSingleton<GamesService>();
 
 var app = builder.Build();

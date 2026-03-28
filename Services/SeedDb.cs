@@ -51,6 +51,7 @@ public static class SeedDb
               add column if not exists p2_disputes int not null default 5;
 
             create table if not exists word_history (
+              id uuid,
               game_id uuid not null references games(id) on delete cascade,
               word text not null,
               claimer_id uuid not null,
@@ -58,6 +59,22 @@ public static class SeedDb
               p2_points int not null default 0,
               is_valid boolean not null,
               created_at timestamptz not null
+            );
+
+            alter table word_history
+              add column if not exists id uuid,
+              add column if not exists points_json jsonb not null default '[]'::jsonb;
+
+            create table if not exists game_players (
+              game_id uuid not null references games(id) on delete cascade,
+              player_id uuid not null,
+              turn_order int not null,
+              score int not null default 0,
+              accepts_left int not null default 5,
+              disputes_left int not null default 5,
+              joined_at timestamptz not null,
+              primary key (game_id, player_id),
+              unique (game_id, turn_order)
             );
         """;
     await cmd.ExecuteNonQueryAsync();
@@ -96,6 +113,7 @@ public static class SeedDb
             );
 
             create table if not exists word_history (
+              id uuid,
               game_id uuid not null references games(id) on delete cascade,
               word text not null,
               claimer_id uuid not null,
@@ -103,6 +121,21 @@ public static class SeedDb
               p2_points int not null default 0,
               is_valid boolean not null,
               created_at timestamptz not null
+            );
+
+            alter table word_history
+              add column if not exists points_json jsonb not null default '[]'::jsonb;
+
+            create table if not exists game_players (
+              game_id uuid not null references games(id) on delete cascade,
+              player_id uuid not null,
+              turn_order int not null,
+              score int not null default 0,
+              accepts_left int not null default 5,
+              disputes_left int not null default 5,
+              joined_at timestamptz not null,
+              primary key (game_id, player_id),
+              unique (game_id, turn_order)
             );
 
             -- accept/dispute counters
