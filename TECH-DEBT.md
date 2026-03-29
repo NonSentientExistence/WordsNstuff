@@ -9,7 +9,7 @@ This document reflects the current state of the repository, runtime behavior, an
 - Backend services and DB abstraction: `Server/Services/` and `Server/Services/Database/`.
 - Frontend SPA: `Frontend/` (React + Vite), built to `Server/wwwroot/`.
 - System tests: `Testing/SystemTests/` (Postman/Newman + Playwright).
-- Unit tests: `UnitTests/EverySecondLetter.UnitTests/` (xUnit).
+- Unit tests: `Testing/UnitTests/EverySecondLetter.UnitTests/` (xUnit).
 
 ## Recently Resolved or Improved
 
@@ -78,8 +78,8 @@ This document reflects the current state of the repository, runtime behavior, an
 
 ### Medium Priority
 
-- Test organization mismatch across docs.
-  - The actual unit test path is `UnitTests/...` at repository root, while some docs still reference `Testing/UnitTests/...`.
+- Test organization mismatch risk across docs.
+  - Keep references aligned to `Testing/UnitTests/...` to avoid stale command paths.
 
 ## Database and Infrastructure Debt
 

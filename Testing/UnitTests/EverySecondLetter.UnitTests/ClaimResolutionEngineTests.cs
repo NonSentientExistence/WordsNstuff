@@ -1,4 +1,5 @@
-using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Core.WordGame;
+using EverySecondLetter.Games.EverySecondLetter;
 using EverySecondLetter.Services;
 using Xunit;
 
@@ -6,7 +7,7 @@ namespace EverySecondLetter.UnitTests;
 
 public sealed class ClaimResolutionEngineTests
 {
-  private readonly ClaimResolutionEngine _sut = new(new EverySecondLetterGameDefinition());
+  private readonly ClaimResolutionEngine _sut = new(new EverySecondLetterRules());
 
   [Fact]
   public void CreatePlan_Throws_WhenThereIsNoPendingClaim()

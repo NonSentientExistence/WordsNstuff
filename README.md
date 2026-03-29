@@ -178,7 +178,7 @@ Testerna finns i Testing/SystemTests och ar uppdelade i:
 - api
 - ui
 
-Enhetstester finns i UnitTests/EverySecondLetter.UnitTests och kor med xUnit.
+Enhetstester finns i Testing/UnitTests/EverySecondLetter.UnitTests och kor med xUnit.
 
 Kommandon:
 
@@ -189,8 +189,7 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
-cd ../..
-dotnet test UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
+dotnet test ../UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
 ```
 
 Noteringar:

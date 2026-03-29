@@ -1,12 +1,13 @@
-using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Core.WordGame;
+using EverySecondLetter.Games.EverySecondLetter;
 using EverySecondLetter.Services;
 using Xunit;
 
 namespace EverySecondLetter.UnitTests;
 
-public sealed class EverySecondLetterGameDefinitionTests
+public sealed class EverySecondLetterRulesTests
 {
-  private readonly EverySecondLetterGameDefinition _sut = new();
+  private readonly EverySecondLetterRules _sut = new();
 
   [Theory]
   [InlineData(GameStatus.WaitingForPlayers, 0, true)]

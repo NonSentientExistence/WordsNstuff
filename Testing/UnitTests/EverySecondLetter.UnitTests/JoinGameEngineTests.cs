@@ -1,4 +1,5 @@
-using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Core.WordGame;
+using EverySecondLetter.Games.EverySecondLetter;
 using EverySecondLetter.Services;
 using Xunit;
 
@@ -6,7 +7,7 @@ namespace EverySecondLetter.UnitTests;
 
 public sealed class JoinGameEngineTests
 {
-  private readonly JoinGameEngine _sut = new(new EverySecondLetterGameDefinition());
+  private readonly JoinGameEngine _sut = new(new EverySecondLetterRules());
 
   [Fact]
   public void CreatePlan_ReturnsRejoin_WhenExistingTokenAlreadyBelongsToPlayer()
@@ -60,7 +61,7 @@ public sealed class JoinGameEngineTests
   [Fact]
   public void CreatePlan_ForFirstPlayerJoinWithoutEnoughPlayers_DoesNotStartGame()
   {
-    var definition = new EverySecondLetterGameDefinition { MinimumPlayersToStart = 3 };
+    var definition = new EverySecondLetterRules { MinimumPlayersToStart = 3 };
     var sut = new JoinGameEngine(definition);
     var player1 = new GamePlayerState(Guid.NewGuid(), "Player 1", 0, 0, 5, 5);
     var players = new List<GamePlayerState> { player1 };

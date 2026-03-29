@@ -1,6 +1,6 @@
 using System.Data.Common;
 using System.Text.Json;
-using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Core.WordGame;
 using EverySecondLetter.Services.Database;
 
 namespace EverySecondLetter.Services;
@@ -10,7 +10,7 @@ public sealed class GamesService
     private readonly IDbConnectionFactory _connections;
     private readonly ISqlDialect _dialect;
     private readonly WordsService _words;
-    private readonly EverySecondLetterGameDefinition _definition;
+    private readonly WordGameRules _rules;
     private readonly JoinGameEngine _joinGame;
     private readonly PlayLetterEngine _playLetter;
     private readonly ClaimResolutionEngine _claimResolution;
@@ -36,12 +36,12 @@ public sealed class GamesService
         string PointsJson
     );
 
-    public GamesService(IDbConnectionFactory connections, ISqlDialect dialect, WordsService words, EverySecondLetterGameDefinition definition, JoinGameEngine joinGame, PlayLetterEngine playLetter, ClaimResolutionEngine claimResolution)
+    public GamesService(IDbConnectionFactory connections, ISqlDialect dialect, WordsService words, WordGameRules rules, JoinGameEngine joinGame, PlayLetterEngine playLetter, ClaimResolutionEngine claimResolution)
     {
         _connections = connections;
         _dialect = dialect;
         _words = words;
-        _definition = definition;
+        _rules = rules;
         _joinGame = joinGame;
         _playLetter = playLetter;
         _claimResolution = claimResolution;
@@ -53,10 +53,7 @@ public sealed class GamesService
         var playerId = Guid.NewGuid();
         var normalizedPlayerName = NormalizePlayerName(playerName, "Player 1");
 
-        await using var conn = await _connections.OpenConnectionAsync();
-        await using var tx = await conn.BeginTransactionAsync();
-
-        try
+        await ExecuteInTransactionAsync(async (conn, tx) =>
         {
             var gameCmd = conn.CreateCommand();
             gameCmd.Transaction = tx;
@@ -76,20 +73,13 @@ public sealed class GamesService
             AddParam(gameCmd, "status", GameStatus.WaitingForPlayers.ToString());
             AddParam(gameCmd, "active", playerId);
             AddParam(gameCmd, "p1", playerId);
-            AddParam(gameCmd, "accepts", _definition.InitialAccepts);
-            AddParam(gameCmd, "disputes", _definition.InitialDisputes);
+            AddParam(gameCmd, "accepts", _rules.InitialAccepts);
+            AddParam(gameCmd, "disputes", _rules.InitialDisputes);
             await gameCmd.ExecuteNonQueryAsync();
 
             await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, turnOrder: 0);
             await InsertLegacyScoreAsync(conn, tx, gameId, playerId);
-
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        });
 
         return new CreateGameResponse(gameId, playerId);
     }
@@ -99,10 +89,7 @@ public sealed class GamesService
         var playerId = Guid.NewGuid();
         var normalizedPlayerName = NormalizePlayerName(playerName, "Player 2");
 
-        await using var conn = await _connections.OpenConnectionAsync();
-        await using var tx = await conn.BeginTransactionAsync();
-
-        try
+        return await ExecuteInTransactionAsync(async (conn, tx) =>
         {
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
@@ -111,7 +98,6 @@ public sealed class GamesService
 
             if (plan.IsRejoin)
             {
-                await tx.CommitAsync();
                 return new JoinGameResponse(gameId, plan.ResultPlayerId);
             }
 
@@ -144,15 +130,8 @@ public sealed class GamesService
             }
             await update.ExecuteNonQueryAsync();
 
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
-
-        return new JoinGameResponse(gameId, playerId);
+            return new JoinGameResponse(gameId, playerId);
+        });
     }
 
     public async Task<GameStateDto> GetStateAsync(Guid gameId)
@@ -178,10 +157,7 @@ public sealed class GamesService
 
     public async Task<GameStateDto> PlayLetterAsync(Guid gameId, Guid playerToken, string letter)
     {
-        await using var conn = await _connections.OpenConnectionAsync();
-        await using var tx = await conn.BeginTransactionAsync();
-
-        try
+        await ExecuteInTransactionAsync(async (conn, tx) =>
         {
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
@@ -215,24 +191,14 @@ public sealed class GamesService
             AddParam(update, "last", plan.LastLetterPlayerId);
             AddParam(update, "id", gameId);
             await update.ExecuteNonQueryAsync();
-
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        });
 
         return await GetStateAsync(gameId);
     }
 
     public async Task<GameStateDto> ClaimWordAsync(Guid gameId, Guid playerToken)
     {
-        await using var conn = await _connections.OpenConnectionAsync();
-        await using var tx = await conn.BeginTransactionAsync();
-
-        try
+        await ExecuteInTransactionAsync(async (conn, tx) =>
         {
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
@@ -241,8 +207,8 @@ public sealed class GamesService
 
             if (game.Status != GameStatus.InProgress)
                 throw new ApiException(409, "Game is not in progress.");
-            if (!_definition.CanClaim(game.CurrentWord, game.LastLetterPlayerId, playerToken))
-                throw new ApiException(409, $"Word must be at least {_definition.MinimumClaimLength} letters and be claimed immediately after your last letter.");
+            if (!_rules.CanClaim(game.CurrentWord, game.LastLetterPlayerId, playerToken))
+                throw new ApiException(409, $"Word must be at least {_rules.MinimumClaimLength} letters and be claimed immediately after your last letter.");
 
             var update = conn.CreateCommand();
             update.Transaction = tx;
@@ -259,14 +225,7 @@ public sealed class GamesService
             AddParam(update, "word", game.CurrentWord);
             AddParam(update, "id", gameId);
             await update.ExecuteNonQueryAsync();
-
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        });
 
         return await GetStateAsync(gameId);
     }
@@ -283,10 +242,7 @@ public sealed class GamesService
 
     private async Task<GameStateDto> ResolveClaimAsync(Guid gameId, Guid playerToken, bool disputed)
     {
-        await using var conn = await _connections.OpenConnectionAsync();
-        await using var tx = await conn.BeginTransactionAsync();
-
-        try
+        await ExecuteInTransactionAsync(async (conn, tx) =>
         {
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
@@ -344,14 +300,7 @@ public sealed class GamesService
             if (!plan.GameOver)
                 AddParam(reset, "active", plan.NextActivePlayerId);
             await reset.ExecuteNonQueryAsync();
-
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        });
 
         return await GetStateAsync(gameId);
     }
@@ -383,8 +332,8 @@ public sealed class GamesService
         AddParam(cmd, "pid", playerId);
         AddParam(cmd, "playerName", playerName);
         AddParam(cmd, "turnOrder", turnOrder);
-        AddParam(cmd, "accepts", _definition.InitialAccepts);
-        AddParam(cmd, "disputes", _definition.InitialDisputes);
+        AddParam(cmd, "accepts", _rules.InitialAccepts);
+        AddParam(cmd, "disputes", _rules.InitialDisputes);
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -442,9 +391,13 @@ public sealed class GamesService
 
     private static GameRow MapGameRow(DbDataReader reader)
     {
+        var statusText = reader.GetString(1);
+        if (!Enum.TryParse<GameStatus>(statusText, ignoreCase: true, out var status))
+            throw new ApiException(500, $"Invalid game status in database: '{statusText}'.");
+
         return new GameRow(
             ReadGuid(reader, 0),
-            Enum.Parse<GameStatus>(reader.GetString(1)),
+            status,
             reader.GetString(2),
             ReadNullableGuid(reader, 3),
             ReadNullableGuid(reader, 4),
@@ -470,14 +423,7 @@ public sealed class GamesService
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            result.Add(new GamePlayerState(
-                ReadGuid(reader, 0),
-                reader.GetString(1),
-                reader.GetInt32(2),
-                reader.GetInt32(3),
-                reader.GetInt32(4),
-                reader.GetInt32(5)
-            ));
+            result.Add(MapPlayerState(reader));
         }
         return result;
     }
@@ -499,14 +445,7 @@ public sealed class GamesService
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            result.Add(new GamePlayerState(
-                ReadGuid(reader, 0),
-                reader.GetString(1),
-                reader.GetInt32(2),
-                reader.GetInt32(3),
-                reader.GetInt32(4),
-                reader.GetInt32(5)
-            ));
+            result.Add(MapPlayerState(reader));
         }
         return result;
     }
@@ -635,14 +574,7 @@ public sealed class GamesService
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            rows.Add(new HistoryRow(
-                reader.GetString(0),
-                ReadGuid(reader, 1),
-                ReadBool(reader, 2),
-                reader.GetInt32(3),
-                reader.GetInt32(4),
-                reader.GetString(5)
-            ));
+            rows.Add(MapHistoryRow(reader));
         }
 
         var player1Id = players.Count > 0 ? players[0].PlayerId : (Guid?)null;
@@ -676,6 +608,65 @@ public sealed class GamesService
         p.ParameterName = name;
         p.Value = value ?? DBNull.Value;
         cmd.Parameters.Add(p);
+    }
+
+    private async Task ExecuteInTransactionAsync(Func<DbConnection, DbTransaction, Task> action)
+    {
+        await using var conn = await _connections.OpenConnectionAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+
+        try
+        {
+            await action(conn, tx);
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
+    private async Task<T> ExecuteInTransactionAsync<T>(Func<DbConnection, DbTransaction, Task<T>> action)
+    {
+        await using var conn = await _connections.OpenConnectionAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+
+        try
+        {
+            var result = await action(conn, tx);
+            await tx.CommitAsync();
+            return result;
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
+    private static GamePlayerState MapPlayerState(DbDataReader reader)
+    {
+        return new GamePlayerState(
+            ReadGuid(reader, 0),
+            reader.GetString(1),
+            reader.GetInt32(2),
+            reader.GetInt32(3),
+            reader.GetInt32(4),
+            reader.GetInt32(5)
+        );
+    }
+
+    private static HistoryRow MapHistoryRow(DbDataReader reader)
+    {
+        return new HistoryRow(
+            reader.GetString(0),
+            ReadGuid(reader, 1),
+            ReadBool(reader, 2),
+            reader.GetInt32(3),
+            reader.GetInt32(4),
+            reader.GetString(5)
+        );
     }
 
     private static Guid ReadGuid(DbDataReader reader, int ordinal)

@@ -1,4 +1,4 @@
-using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Core.WordGame;
 using Xunit;
 
 namespace EverySecondLetter.UnitTests;

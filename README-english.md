@@ -178,7 +178,7 @@ Tests live in Testing/SystemTests and are split by project:
 - api
 - ui
 
-Unit tests live in UnitTests/EverySecondLetter.UnitTests and run with xUnit.
+Unit tests live in Testing/UnitTests/EverySecondLetter.UnitTests and run with xUnit.
 
 Commands:
 
@@ -189,8 +189,7 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
-cd ../..
-dotnet test UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
+dotnet test ../UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
 ```
 
 Notes:
