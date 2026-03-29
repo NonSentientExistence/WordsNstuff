@@ -111,44 +111,7 @@ Oppna http://localhost:5010.
 
 ## Spelregler
 
-### Grundflode
-
-1. Spelare 1 skapar spel.
-2. Spelare 2 gar med via Game ID.
-3. Spelarna turas om att lagga en bokstav (A-Z).
-4. En spelare kan claima nar ordet har minst 3 bokstaver och spelaren la senaste bokstaven.
-5. Motspelaren svarar med Accept eller Dispute.
-
-### Poang
-
-Grundpoang:
-
-baseScore = (antal bokstaver claimaren lagt i ordet)^2
-
-Om motspelaren accepterar:
-
-- Claimaren far 100% av baseScore.
-
-Om motspelaren bestrider och ordet ar giltigt:
-
-- Claimaren far floor(baseScore * 1.5).
-
-Om motspelaren bestrider och ordet ar ogiltigt:
-
-- Motspelaren far floor(baseScore * 0.5).
-
-### Action Limits och slutspel
-
-- Varje spelare startar med 5 Accept och 5 Dispute.
-- Varje svar pa claim forbrukar en motsvarande action.
-- Spelet avslutas automatiskt nar bada spelare forbrukat alla 10 svar.
-- Hogst poang vinner, oavgjort ar mojligt.
-
-### Ordlista
-
-- ENABLE-ordlistan (wordlists/enable1.txt)
-- Skiftlagesokanslig validering
-- Minsta giltiga langd: 3
+Se den kanoniska regelbeskrivningen i [frontend/public/gameplay-and-rules.md](frontend/public/gameplay-and-rules.md).
 
 ## API Oversikt
 

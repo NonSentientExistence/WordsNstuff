@@ -111,44 +111,7 @@ Open http://localhost:5010.
 
 ## Gameplay Rules
 
-### Core Flow
-
-1. Player 1 creates a game.
-2. Player 2 joins with Game ID.
-3. Players alternate placing one letter (A-Z).
-4. A player can claim once the word has at least 3 letters and they placed the last letter.
-5. Opponent responds with Accept or Dispute.
-
-### Scoring
-
-Base score is:
-
-baseScore = (number of letters the claimer placed in this word)^2
-
-If opponent accepts:
-
-- Claimer gets 100% of baseScore.
-
-If opponent disputes and word is valid:
-
-- Claimer gets floor(baseScore * 1.5).
-
-If opponent disputes and word is invalid:
-
-- Opponent gets floor(baseScore * 0.5).
-
-### Action Limits and Endgame
-
-- Each player starts with 5 Accept and 5 Dispute actions.
-- Each claim response consumes one corresponding action.
-- Game finishes automatically when both players have exhausted all 10 responses.
-- Highest score wins; ties are possible.
-
-### Dictionary
-
-- ENABLE word list (wordlists/enable1.txt)
-- Case-insensitive validation
-- Minimum valid length: 3
+See the canonical rules document at [frontend/public/gameplay-and-rules.md](frontend/public/gameplay-and-rules.md).
 
 ## API Overview
 
