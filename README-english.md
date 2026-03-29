@@ -1,6 +1,6 @@
 # EverySecondLetter
 
-Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vite frontend.
+Two-player word game built with .NET 8 Minimal API, PostgreSQL or SQLite, and a React + Vite frontend.
 
 ## What This Repo Contains
 
@@ -11,7 +11,7 @@ Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vi
 
 ## Tech Stack
 
-- Backend: .NET 8 Minimal API, Npgsql, PostgreSQL
+- Backend: .NET 8 Minimal API, provider-based SQL access (PostgreSQL/SQLite)
 - Frontend: React 18, Vite, React Context
 - Testing: Postman/Newman (API), Playwright + playwright-bdd (UI)
 
@@ -19,7 +19,7 @@ Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vi
 
 - .NET 8 SDK
 - Node.js 18+
-- PostgreSQL
+- PostgreSQL or SQLite
 - psql (optional but useful)
 
 ## Project Structure
@@ -33,11 +33,12 @@ Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vi
 │   ├── wordlists/
 │   └── wwwroot/
 ├── Frontend/
+│   ├── public/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── context/
 │   │   └── pages/
-│   └── README.md
+│   └── vite.config.js
 └── Testing/SystemTests/
 ```
 
@@ -177,7 +178,7 @@ Tests live in Testing/SystemTests and are split by project:
 - api
 - ui
 
-Unit tests live in Testing/UnitTests and run with xUnit.
+Unit tests live in UnitTests/EverySecondLetter.UnitTests and run with xUnit.
 
 Commands:
 
@@ -188,7 +189,8 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
-dotnet test
+cd ../..
+dotnet test UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
 ```
 
 Notes:

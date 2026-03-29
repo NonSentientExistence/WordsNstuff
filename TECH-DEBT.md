@@ -1,103 +1,107 @@
 # Technical Debt Report (Updated 2026-03-29)
 
-This report reflects the current codebase status after recent UI test stabilization and storage migration work.
+This document reflects the current state of the repository, runtime behavior, and folder structure.
 
-## Recently Addressed
+## Current Architecture Snapshot
 
-- UI BDD flake for missing letters in word tiles was fixed by waiting for expected rendered tile text in Playwright page-object helpers.
-- Rejoin UI scenario was aligned with current storage behavior by reading and restoring sessionStorage (with localStorage fallback).
-- Full UI feature "Full end-to-end game completion flow" is currently green after step-definition fixes for token lookup and endgame loop behavior.
+- Backend API: `Server/` (.NET 8 Minimal API).
+- Gameplay engines/contracts: `Server/Gameplay/EverySecondLetter/`.
+- Backend services and DB abstraction: `Server/Services/` and `Server/Services/Database/`.
+- Frontend SPA: `Frontend/` (React + Vite), built to `Server/wwwroot/`.
+- System tests: `Testing/SystemTests/` (Postman/Newman + Playwright).
+- Unit tests: `UnitTests/EverySecondLetter.UnitTests/` (xUnit).
 
-## Backend (C#)
+## Recently Resolved or Improved
 
-### High Priority
+- UI test stability has improved (word tile rendering waits and end-to-end flow fixes).
+- Rejoin persistence behavior is now sessionStorage-first with localStorage fallback migration in the frontend context.
+- The previous debt item "no unit test layer" is no longer accurate; gameplay/service unit tests exist.
 
-- Raw SQL with manual mapping in GamesService increases fragility and maintenance cost.
-  - Many queries map columns by index and rely on stringly-typed status values.
-  - Consider introducing Dapper or typed row mappers as an incremental step before any ORM migration.
-
-- Unsafe enum parsing still exists.
-  - Enum.Parse<GameStatus>(...) can throw on invalid database values.
-  - Replace with Enum.TryParse(..., out var status) and return a controlled ApiException on failure.
-
-- Always-on developer exception page.
-  - app.UseDeveloperExceptionPage() is enabled without environment guard.
-  - Should be limited to development only.
-
-- Authentication model is still weak.
-  - Player identity is a GUID token in X-Player-Token without auth/session proof.
-  - Tokens are bearer-like and not bound to user identity or expiration.
-
-### Medium Priority
-
-- Repeated transaction boilerplate in service methods.
-  - Similar try/catch/commit/rollback blocks repeated throughout GamesService.
-  - Introduce a transaction helper wrapper to reduce duplication and rollback mistakes.
-
-- Hardcoded gameplay constants are still scattered.
-  - Move tunables (for example minimum claim length and starting action counts) to configuration.
-
-- No structured logging for core game transitions.
-  - Limited observability for debugging production incidents.
-
-## Frontend (React)
+## Backend Debt (C#)
 
 ### High Priority
 
-- Credentials are stored in web storage.
-  - Current implementation prefers sessionStorage and migrates legacy localStorage values.
-  - This is better than localStorage-only persistence for tab scoping, but still vulnerable to XSS token theft.
+- Raw SQL with manual mapping in `GamesService` remains a maintainability risk.
+  - SQL queries and `DbDataReader` index-based mapping are tightly coupled.
+  - String status values are converted manually across read/write paths.
 
-- Polling model remains fixed interval.
-  - Game state polling uses a hardcoded 1000ms interval.
-  - Should be centralized in a constant or configuration and ideally move toward server push when feasible.
+- Unsafe enum parsing is still present.
+  - `Enum.Parse<GameStatus>(...)` can throw on malformed persisted data.
+  - Replace with guarded parsing (`Enum.TryParse`) and controlled domain/API errors.
+
+- Developer exception page is enabled unconditionally.
+  - `app.UseDeveloperExceptionPage()` should be development-only.
+
+- Authentication/identity model is intentionally lightweight but weak.
+  - `X-Player-Token` is effectively a bearer token without expiry, refresh, or account binding.
 
 ### Medium Priority
 
-- Frontend remains JavaScript-only.
-  - No TypeScript type safety for API contracts or component props.
+- Repeated transaction patterns in service methods.
+  - Multiple methods duplicate begin/commit/rollback and error handling boilerplate.
 
-- Error UX can still be improved.
-  - Some API failures are surfaced, but there is no robust retry/backoff strategy for transient fetch failures.
+- Runtime tunables are not centralized.
+  - Gameplay constants and polling-sensitive values are mostly code-defined, not config-driven.
 
-## Testing and QA
+- Observability/logging is minimal for key game transitions.
+  - Limited structured telemetry around claim, accept/dispute, and game completion events.
+
+## Frontend Debt (React)
 
 ### High Priority
 
-- No unit test layer for game rules.
-  - Rule logic (turn ownership, claim/dispute scoring, endgame conditions) is primarily validated through API/UI scenarios.
-  - Add deterministic unit tests around gameplay definition and scoring calculations.
+- Token and game identity persistence in browser storage still carries XSS risk.
+  - sessionStorage-first is an improvement over localStorage-only behavior.
+  - Sensitive token material is still accessible to injected scripts.
 
-- CI enforcement is not documented.
-  - API/UI Playwright tests exist and are valuable, but no documented always-on CI gate is visible in this repository.
+- Fixed 1000ms polling interval in `GamePage`.
+  - Interval is hardcoded and not centrally configured.
+  - No adaptive polling/backoff under errors or idle states.
 
 ### Medium Priority
 
-- Some BDD naming is now misleading.
-  - The scenario name "Rejoin from saved localStorage data" still references localStorage although implementation now uses sessionStorage-first behavior.
+- Frontend codebase is JavaScript-only.
+  - No TypeScript safety for API payloads, game state shape, or component props.
 
-## Database and Infrastructure
+- Error-handling UX can be more resilient.
+  - Retry/backoff patterns are not consistently implemented for transient API failures.
+
+## Testing and Quality Debt
 
 ### High Priority
 
-- Schema lifecycle management is minimal.
-  - Database setup appears to rely on initialization SQL plus startup seeding.
-  - Introduce explicit migration tooling and versioned migration history.
+- CI gating is not represented in repository config.
+  - System and unit tests exist, but no explicit always-on CI workflow is visible in this repo.
 
-- Missing explicit API hardening middleware.
-  - Rate limiting is not configured.
-  - Security headers/CORS policy are not explicitly configured in Program.cs.
+- BDD naming and intent drift.
+  - Some UI scenario names still reference localStorage semantics while behavior is now sessionStorage-first.
 
 ### Medium Priority
 
-- Operational diagnostics are sparse.
-  - No audit trail for key gameplay events (claim, accept, dispute, game-finished).
+- Test organization mismatch across docs.
+  - The actual unit test path is `UnitTests/...` at repository root, while some docs still reference `Testing/UnitTests/...`.
+
+## Database and Infrastructure Debt
+
+### High Priority
+
+- Schema evolution is initialization-driven rather than migration-driven.
+  - Current startup initialization/seeding flow works, but versioned migrations are not explicit.
+
+- Baseline API hardening middleware is limited.
+  - No explicit rate limiting.
+  - No explicit CORS/security-header policy configuration in the main pipeline.
+
+### Medium Priority
+
+- Production diagnostics are sparse.
+  - No explicit audit/event trail for core gameplay actions.
 
 ## Prioritized Next Steps
 
-1. Guard developer exception page by environment and add baseline security middleware (rate limiting, security headers, explicit CORS policy).
-2. Replace enum parsing with safe parsing plus explicit error handling.
-3. Add unit tests for scoring and state transitions in gameplay definition.
-4. Introduce migration tooling for database schema evolution.
-5. Move polling interval and gameplay tunables into config.
-6. Rename misleading BDD scenario titles to reflect sessionStorage-first persistence.
+1. Guard developer exception page by environment and add baseline API hardening (explicit CORS policy, rate limiting, security headers).
+2. Replace unsafe enum parsing with safe parse paths and controlled failure handling.
+3. Introduce a transaction helper abstraction in `GamesService` to reduce boilerplate and rollback risk.
+4. Move polling interval and gameplay tunables to centralized configuration.
+5. Add or document CI workflows that run unit + system tests on every PR.
+6. Align BDD scenario naming and README paths with current sessionStorage-first behavior and actual test folder layout.

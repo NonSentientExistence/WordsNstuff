@@ -1,6 +1,6 @@
 # EverySecondLetter
 
-Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, PostgreSQL och ett React + Vite-frontend.
+Turordningsbaserat ordspel for tva spelare, byggt med .NET 8 Minimal API, PostgreSQL eller SQLite och ett React + Vite-frontend.
 
 ## Vad Repon Innehaller
 
@@ -11,7 +11,7 @@ Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, Post
 
 ## Teknikstack
 
-- Backend: .NET 8 Minimal API, Npgsql, PostgreSQL
+- Backend: .NET 8 Minimal API, providerbaserad SQL-atkomst (PostgreSQL/SQLite)
 - Frontend: React 18, Vite, React Context
 - Test: Postman/Newman (API), Playwright + playwright-bdd (UI)
 
@@ -19,7 +19,7 @@ Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, Post
 
 - .NET 8 SDK
 - Node.js 18+
-- PostgreSQL
+- PostgreSQL eller SQLite
 - psql (valfritt men praktiskt)
 
 ## Projektstruktur
@@ -33,11 +33,12 @@ Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, Post
 │   ├── wordlists/
 │   └── wwwroot/
 ├── Frontend/
+│   ├── public/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── context/
 │   │   └── pages/
-│   └── README.md
+│   └── vite.config.js
 └── Testing/SystemTests/
 ```
 
@@ -177,7 +178,7 @@ Testerna finns i Testing/SystemTests och ar uppdelade i:
 - api
 - ui
 
-Enhetstester finns i Testing/UnitTests och kor med xUnit.
+Enhetstester finns i UnitTests/EverySecondLetter.UnitTests och kor med xUnit.
 
 Kommandon:
 
@@ -188,7 +189,8 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
-dotnet test
+cd ../..
+dotnet test UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj
 ```
 
 Noteringar:
