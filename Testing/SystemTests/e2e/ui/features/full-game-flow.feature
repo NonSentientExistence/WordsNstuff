@@ -20,27 +20,27 @@ Feature: Full end-to-end game completion flow
   Scenario: Accept button shows remaining count
     Given ett spel i progress med två spelare
     When spelare 1 bygger CAT och claimar
-    Then visar accept-knappen "Accept (5)" för spelare 2
+    Then visar accept-knappen med 5 kvar för spelare 2
     When spelare 2 accepterar
-    Then visar accept-knappen "Accept (4)" för spelare 2
-    When spelare 1 bygger CAT igen och claimar
-    Then visar accept-knappen "Accept (4)" för spelare 2
+    And spelare 1 bygger CATS och claimar igen
+    Then visar accept-knappen med 4 kvar för spelare 2
 
   Scenario: Dispute button shows remaining count
     Given ett spel i progress med två spelare
     When spelare 1 bygger CAT och claimar
-    Then visar dispute-knappen "Dispute (5)" för spelare 2
+    Then visar dispute-knappen med 5 kvar för spelare 2
     When spelare 2 bestrider (motsättningsord)
-    Then visar dispute-knappen "Dispute (4)" för spelare 2
+    And spelare 1 bygger CATS och claimar igen
+    Then visar dispute-knappen med 4 kvar för spelare 2
 
   Scenario: Claim button only available to player who placed last letter
     Given ett spel där spelare 1 låg sista bokstaven
     Then visar gränssnittet claim-knappen som tillgänglig för spelare 1
-    And visar claim-knappen som inaktiverad för spelare 2
+    And visar claim-knappen som inte tillgänglig för spelare 2
 
   Scenario: Minimum 3 letters required for claim
     Given ett spel med två bokstäver i ordet
-    Then visar claim-knappen som inaktiverad för båda spelarna
+    Then visar claim-knappen som inte tillgänglig för båda spelarna
 
   Scenario: Current word displays as tiles
     Given ett spel i progress
@@ -48,3 +48,8 @@ Feature: Full end-to-end game completion flow
     Then visar gränssnittet bokstaven H som en tile
     When spelare 2 lägger E
     Then visar gränssnittet bokstäver H och E som tiles
+
+  Scenario: Scoreboard shows opponent name labels
+    Given två spelare startar ett nytt spel i UI
+    Then visar scoreboard "You (Player 1)" och "They (Player 2)" för spelare 1
+    And visar scoreboard "They (Player 1)" och "You (Player 2)" för spelare 2

@@ -1,7 +1,8 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { Given, When, Then, And } = createBdd();
+const { Given, When, Then } = createBdd();
+const And = Then;
 
 const state = {
   gameId: null,
@@ -34,7 +35,7 @@ async function postNoBody(request, url, token) {
   return request.post(url, { headers });
 }
 
-Given('ett nytt API-spel med två spelare', async ({ request, baseURL }) => {
+Given('ett nytt API-spel med två spelare för bokstavstester', async ({ request, baseURL }) => {
   const createRes = await postNoBody(request, `${baseURL}/games`);
   expect(createRes.status()).toBe(201);
   const createData = await createRes.json();

@@ -1,7 +1,8 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { Given, When, Then, And } = createBdd();
+const { Given, When, Then } = createBdd();
+const And = Then;
 
 const state = {
   gameId: null,
@@ -86,16 +87,22 @@ When('spelare 2 accepterar', async ({ request, baseURL }) => {
   state.actionResponse = await acceptRes.json();
 });
 
-Then('spelare 1 får poäng 9 \\(3² = 9\\)', async () => {
-  expect(state.actionResponse.player1Score).toBe(9);
+When('spelare 1 accepterar', async ({ request, baseURL }) => {
+  const acceptRes = await postNoBody(request, `${baseURL}/games/${state.gameId}/accept`, state.p1);
+  expect(acceptRes.status()).toBe(200);
+  state.actionResponse = await acceptRes.json();
+});
+
+Then('spelare 1 får poäng 4 \\(2² = 4\\)', async () => {
+  expect(state.actionResponse.player1Score).toBe(4);
 });
 
 And('ordet återställs till tomt', async () => {
   expect(state.actionResponse.currentWord).toBe('');
 });
 
-And('nästa spelers tur är spelare 1 \\(opponent of claimer\\)', async () => {
-  expect(state.actionResponse.activePlayerId).toBe(state.p1);
+And('nästa spelers tur är spelare 2 \\(opponent of claimer\\)', async () => {
+  expect(state.actionResponse.activePlayerId).toBe(state.p2);
 });
 
 When('spelare 1 lägger C A T och claimar', async ({ request, baseURL }) => {
@@ -183,8 +190,45 @@ And('spelare 2 får poäng 2 \\(2² × 0.5 = 2\\)', async () => {
   expect(state.actionResponse.player2Score).toBe(2);
 });
 
-Then('nästa aktiv spelare är spelare 1 \\(motsats av claimer\\)', async () => {
-  expect(state.actionResponse.activePlayerId).toBe(state.p1);
+Then('nästa aktiv spelare är spelare {int} \\(motsats av claimer\\)', async ({}, playerNumber) => {
+  const expected = playerNumber === 1 ? state.p1 : state.p2;
+  expect(state.actionResponse.activePlayerId).toBe(expected);
+});
+
+When('spelare {int} bygger C A T och claimar', async ({ request, baseURL }, playerNumber) => {
+  const claimer = playerNumber === 1 ? state.p1 : state.p2;
+  const opponent = playerNumber === 1 ? state.p2 : state.p1;
+
+  const playC = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 'c' }, claimer);
+  expect(playC.status()).toBe(200);
+
+  const playA = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 'a' }, opponent);
+  expect(playA.status()).toBe(200);
+
+  const playT = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 't' }, claimer);
+  expect(playT.status()).toBe(200);
+
+  const claimRes = await postNoBody(request, `${baseURL}/games/${state.gameId}/claim`, claimer);
+  expect(claimRes.status()).toBe(200);
+  state.claimResponse = await claimRes.json();
+});
+
+When('spelare {int} bygger C A T \\({int} letters\\) och claimar', async ({ request, baseURL }, playerNumber) => {
+  const claimer = playerNumber === 1 ? state.p1 : state.p2;
+  const opponent = playerNumber === 1 ? state.p2 : state.p1;
+
+  const playC = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 'c' }, claimer);
+  expect(playC.status()).toBe(200);
+
+  const playA = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 'a' }, opponent);
+  expect(playA.status()).toBe(200);
+
+  const playT = await postJson(request, `${baseURL}/games/${state.gameId}/letter`, { letter: 't' }, claimer);
+  expect(playT.status()).toBe(200);
+
+  const claimRes = await postNoBody(request, `${baseURL}/games/${state.gameId}/claim`, claimer);
+  expect(claimRes.status()).toBe(200);
+  state.claimResponse = await claimRes.json();
 });
 
 When('spelare 1 bygger C A T igen och claimar', async ({ request, baseURL }) => {
@@ -252,7 +296,7 @@ And('spelare 2 bestrider och ord är ogiltigt', async ({ request, baseURL }) => 
   state.actionResponse = await disputeRes.json();
 });
 
-Then('spelare 1 får 0, spelare 2 får 2 poäng totalt \\(2 \\+ 6 = 8\\)', async () => {
-  expect(state.actionResponse.player1Score).toBe(0);
+Then('spelare 1 har totalt 4 och spelare 2 har totalt 8 poäng', async () => {
+  expect(state.actionResponse.player1Score).toBe(4);
   expect(state.actionResponse.player2Score).toBe(8);
 });

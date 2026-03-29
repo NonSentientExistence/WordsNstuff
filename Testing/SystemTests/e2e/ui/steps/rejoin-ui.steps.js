@@ -2,89 +2,94 @@ import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 import GamePage from '../pages/game.page.js';
 
-const { Given, When, Then, And } = createBdd();
+const { Given, When, Then } = createBdd();
+const And = Then;
 
 const state = {
-  game: null,
+  gameP1: null,
+  gameP2: null,
   gameId: null,
+  p2SavedPlayer: null,
+  p2SavedGame: null,
+  beforeRefreshP1Score: 0,
+  beforeRefreshP2Score: 0,
 };
 
 Given('ett spel där både spelarna är aktiva', async ({ page, browser }) => {
-  // Player 1 creates
-  state.game = new GamePage(page);
-  await state.game.goto();
-  await state.game.startNewGame();
-  await state.game.expectGameCreated();
-  state.gameId = await state.game.getGameId();
+  state.gameP1 = new GamePage(page);
+  await state.gameP1.goto();
+  await state.gameP1.startNewGame('Player 1');
+  await state.gameP1.expectGameCreated();
+  state.gameId = await state.gameP1.getGameId();
 
-  // Player 2 joins
   const context2 = await browser.newContext();
   const page2 = await context2.newPage();
-  const game2 = new GamePage(page2);
-  await game2.goto();
-  await game2.joinGameById(state.gameId);
-  await game2.expectGameCreated();
+  state.gameP2 = new GamePage(page2);
+  await state.gameP2.goto();
+  await state.gameP2.joinGameById(state.gameId, 'Player 2');
+
+  await state.gameP1.waitForStatus('InProgress');
+  await state.gameP2.waitForStatus('InProgress');
+
+  state.beforeRefreshP1Score = await state.gameP2.getPlayer1Score();
+  state.beforeRefreshP2Score = await state.gameP2.getPlayer2Score();
+
+  state.p2SavedPlayer = await page2.evaluate(() => window.localStorage.getItem('esl_player'));
+  state.p2SavedGame = await page2.evaluate(() => window.localStorage.getItem('esl_game'));
 });
 
 When('spelare 2 uppdaterar sidan \\(browser refresh\\)', async () => {
-  await state.game.refreshPage();
+  await state.gameP2.refreshPage();
 });
 
 Then('återställs spelet automatiskt till samma state', async () => {
-  await expect(state.game.page.locator('#game')).toBeVisible();
-});
-
-And('visar sitt player token', async () => {
-  const token = await state.game.getPlayerToken();
-  expect(token).not.toBe('-');
+  await expect(state.gameP2.page.getByTestId('game-active-card')).toBeVisible();
+  await expect(state.gameP2.page.getByTestId('game-status')).toHaveText('InProgress');
 });
 
 And('spelers stats förblir oförändrade', async () => {
-  const status = await state.game.getStatus();
-  expect(status).toBe('InProgress');
+  const p1Score = await state.gameP2.getPlayer1Score();
+  const p2Score = await state.gameP2.getPlayer2Score();
+  expect(p1Score).toBe(state.beforeRefreshP1Score);
+  expect(p2Score).toBe(state.beforeRefreshP2Score);
 });
 
 Given('ett spel med två aktiva spelare', async ({ page, browser }) => {
-  state.game = new GamePage(page);
-  await state.game.goto();
-  await state.game.startNewGame();
-  await state.game.expectGameCreated();
-  state.gameId = await state.game.getGameId();
+  state.gameP1 = new GamePage(page);
+  await state.gameP1.goto();
+  await state.gameP1.startNewGame('Player 1');
+  await state.gameP1.expectGameCreated();
+  state.gameId = await state.gameP1.getGameId();
 
   const context2 = await browser.newContext();
   const page2 = await context2.newPage();
-  const game2 = new GamePage(page2);
-  await game2.goto();
-  await game2.joinGameById(state.gameId);
-  await game2.expectGameCreated();
+  state.gameP2 = new GamePage(page2);
+  await state.gameP2.goto();
+  await state.gameP2.joinGameById(state.gameId, 'Player 2');
+  await state.gameP1.waitForStatus('InProgress');
+  await state.gameP2.waitForStatus('InProgress');
+
+  state.p2SavedPlayer = await page2.evaluate(() => window.localStorage.getItem('esl_player'));
+  state.p2SavedGame = await page2.evaluate(() => window.localStorage.getItem('esl_game'));
 });
 
-When('spelare 1 kopierar game link', async () => {
-  // Copy happens via the copyGameLinkBtn
-  await state.game.page.locator('#copyGameLinkBtn').click();
-});
-
-And('öppnar länken i nytt fönster', async ({ browser }) => {
-  const link = await state.game.page.locator('#gameLinkOut').textContent();
+When('spelare 2 öppnar appen i nytt fönster med sparade credentials', async ({ browser }) => {
   const context3 = await browser.newContext();
+  await context3.addInitScript(({ savedPlayer, savedGame }) => {
+    if (savedPlayer) window.localStorage.setItem('esl_player', savedPlayer);
+    if (savedGame) window.localStorage.setItem('esl_game', savedGame);
+  }, {
+    savedPlayer: state.p2SavedPlayer,
+    savedGame: state.p2SavedGame,
+  });
+
   const page3 = await context3.newPage();
-  await page3.goto(link);
-  state.game.page = page3;
-  await state.game.page.waitForTimeout(500);
-});
-
-Then('visar det andra fönstret samma game ID', async () => {
-  const gameId = await state.game.getGameId();
-  expect(gameId).toBe(state.gameId);
-});
-
-When('andra spelaren enters sitt redan existerande token', async () => {
-  // Token should be auto-restored from localStorage on page load
-  // This verifies the rejoin happened automatically
+  state.gameP2 = new GamePage(page3);
+  await state.gameP2.goto();
 });
 
 Then('visar gränssnittet spelet i samma status', async () => {
-  const status = await state.game.getStatus();
+  await expect(state.gameP2.page.getByTestId('game-active-card')).toBeVisible();
+  const status = await state.gameP2.getStatus();
   expect(status).toBe('InProgress');
-  await expect(state.game.page.locator('#game')).toBeVisible();
 });

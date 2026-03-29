@@ -1,0 +1,17 @@
+{
+  "name": "every-second-letter-system-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bdd:gen": "bddgen",
+    "test": "npm run bdd:gen && playwright test",
+    "test:api": "npm run bdd:gen && playwright test --project=api",
+    "test:ui": "npm run bdd:gen && playwright test --project=ui",
+    "test:headed": "npm run bdd:gen && playwright test --project=ui --headed",
+    "codegen": "playwright codegen http://localhost:5010"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright-bdd": "^8.4.1"
+  }
+}

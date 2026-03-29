@@ -9,112 +9,137 @@ export default class GamePage {
         await this.page.goto('/');
     }
 
-    async startNewGame() {
-        await this.page.locator('#createBtn').click();
+    async registerIfNeeded(playerName = 'Player') {
+        const registerPage = this.page.getByTestId('register-page');
+        if (await registerPage.isVisible()) {
+            await this.page.getByTestId('player-name-input').fill(playerName);
+            await this.page.getByTestId('register-continue').click();
+        }
+    }
+
+    async startNewGame(playerName = 'Player 1') {
+        await this.registerIfNeeded(playerName);
+        await expect(this.page.getByTestId('create-page')).toBeVisible();
+        await this.page.getByTestId('create-game-btn').click();
+        await expect(this.page.getByTestId('game-waiting-card')).toBeVisible();
     }
 
     async expectGameCreated() {
-        await expect(this.page.locator('#game')).toBeVisible();
-        await expect(this.page.locator('#gameIdGameOut')).not.toHaveText('-');
+        await expect(this.page.getByTestId('game-waiting-card')).toBeVisible();
+        await expect(this.page.getByTestId('game-id-text')).not.toHaveText('');
+    }
+
+    async expectGameActive() {
+        await expect(this.page.getByTestId('game-active-card')).toBeVisible();
     }
 
     async getGameId() {
-        const elem = await this.page.locator('#gameIdOut');
-        return await elem.textContent();
-    }
-
-    async getPlayerToken() {
-        const elem = await this.page.locator('#playerTokenOut');
-        return await elem.textContent();
+        const text = await this.page.getByTestId('game-id-text').textContent();
+        return (text || '').trim();
     }
 
     async getStatus() {
-        const elem = await this.page.locator('#statusOut');
-        return await elem.textContent();
-    }
-
-    async getCurrentWord() {
-        const elem = await this.page.locator('#wordOut');
-        return await elem.textContent();
+        const elem = await this.page.getByTestId('game-status');
+        return (await elem.textContent())?.trim();
     }
 
     async getPlayer1Score() {
-        const elem = await this.page.locator('#p1ScoreOut');
-        return parseInt(await elem.textContent());
+        const elem = await this.page.getByTestId('score-player-1-value');
+        return parseInt(await elem.textContent(), 10);
+    }
+
+    async getPlayer1Label() {
+        const elem = this.page.getByTestId('score-player-1').locator('.player-name');
+        return ((await elem.textContent()) || '').trim();
     }
 
     async getPlayer2Score() {
-        const elem = await this.page.locator('#p2ScoreOut');
-        return parseInt(await elem.textContent());
+        const elem = await this.page.getByTestId('score-player-2-value');
+        return parseInt(await elem.textContent(), 10);
+    }
+
+    async getPlayer2Label() {
+        const elem = this.page.getByTestId('score-player-2').locator('.player-name');
+        return ((await elem.textContent()) || '').trim();
     }
 
     async getAcceptButtonText() {
-        const elem = await this.page.locator('#acceptBtn');
-        return await elem.textContent();
+        const elem = await this.page.getByTestId('accept-btn');
+        return (await elem.textContent()) || '';
     }
 
     async getDisputeButtonText() {
-        const elem = await this.page.locator('#disputeBtn');
-        return await elem.textContent();
+        const elem = await this.page.getByTestId('dispute-btn');
+        return (await elem.textContent()) || '';
     }
 
     async playLetter(letter) {
-        await this.page.locator('#letterIn').fill(letter);
-        await this.page.locator('#playBtn').click();
-        await this.page.waitForTimeout(500);
+        await expect(this.page.getByTestId('letter-input')).toBeVisible();
+        await this.page.getByTestId('letter-input').fill(letter);
+        await this.page.getByTestId('play-btn').click();
     }
 
     async claimWord() {
-        await this.page.locator('#claimBtn').click();
-        await this.page.waitForTimeout(500);
+        await this.page.getByTestId('claim-btn').click();
     }
 
     async acceptClaim() {
-        await this.page.locator('#acceptBtn').click();
-        await this.page.waitForTimeout(500);
+        await this.page.getByTestId('accept-btn').click();
     }
 
     async disputeClaim() {
-        await this.page.locator('#disputeBtn').click();
-        await this.page.waitForTimeout(500);
+        await this.page.getByTestId('dispute-btn').click();
     }
 
-    async isClaimButtonDisabled() {
-        return await this.page.locator('#claimBtn').isDisabled();
+    async isClaimButtonVisible() {
+        return await this.page.getByTestId('claim-btn').isVisible();
     }
 
     async isAcceptButtonDisabled() {
-        return await this.page.locator('#acceptBtn').isDisabled();
+        return await this.page.getByTestId('accept-btn').isDisabled();
     }
 
     async isDisputeButtonDisabled() {
-        return await this.page.locator('#disputeBtn').isDisabled();
+        return await this.page.getByTestId('dispute-btn').isDisabled();
     }
 
     async getWordTiles() {
-        const tiles = await this.page.locator('.word-tile').count();
+        const tiles = await this.page.getByTestId('word-tile').count();
         const letters = [];
         for (let i = 0; i < tiles; i++) {
-            const text = await this.page.locator(`.word-tile`).nth(i).textContent();
-            letters.push(text);
+            const text = await this.page.getByTestId('word-tile').nth(i).textContent();
+            letters.push((text || '').trim());
         }
         return letters.join('');
     }
 
-    async copyGameLink() {
-        await this.page.locator('#copyGameLinkBtn').click();
-        return await this.page.locator('#gameLinkOut').textContent();
+    async getPendingWordText() {
+        const text = await this.page.getByTestId('pending-word').textContent();
+        return (text || '').trim();
     }
 
-    async joinGameById(gameId) {
-        await this.page.locator('#joinGameId').fill(gameId);
-        await this.page.locator('#joinBtn').click();
-        await this.page.waitForTimeout(500);
+    async getCurrentWordCountText() {
+        const text = await this.page.getByTestId('word-count').textContent();
+        return (text || '').trim();
+    }
+
+    async joinGameById(gameId, playerName = 'Player 2') {
+        await this.registerIfNeeded(playerName);
+        const joinPageVisible = await this.page.getByTestId('join-page').isVisible();
+        if (!joinPageVisible) {
+            await this.page.getByTestId('toggle-join').click();
+        }
+        await expect(this.page.getByTestId('join-page')).toBeVisible();
+        await this.page.getByTestId('join-game-id-input').fill(gameId);
+        await this.page.getByTestId('join-game-btn').click();
     }
 
     async refreshPage() {
         await this.page.reload();
-        await this.page.waitForTimeout(500);
+    }
+
+    async waitForStatus(expectedStatus, timeoutMs = 15000) {
+        await expect(this.page.getByTestId('game-status')).toHaveText(expectedStatus, { timeout: timeoutMs });
     }
 
     async pollForGameStatus(expectedStatus, timeoutMs = 10000) {
@@ -125,10 +150,5 @@ export default class GamePage {
             await this.page.waitForTimeout(100);
         }
         return false;
-    }
-
-    async getGameLog() {
-        const elem = await this.page.locator('#log');
-        return await elem.textContent();
     }
 }

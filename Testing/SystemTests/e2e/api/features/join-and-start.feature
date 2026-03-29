@@ -15,3 +15,8 @@ Feature: Join and game start flow
     When spelare 2 försöker att joina samma spel igen
     Then returnerar servern samma spelare 2 token
     And spelet förblir oförändrat (status och spelarantal)
+
+  Scenario: Player names are persisted in game state
+    Given ett nytt namngivet spel skapas med spelare Alice
+    When spelare Bob joinnar samma spel
+    Then game state innehåller spelarnamnen Alice och Bob i turordning

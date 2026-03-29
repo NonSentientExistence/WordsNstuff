@@ -4,9 +4,9 @@ Feature: Scoring calculation and turn rotation
     Given ett nytt API-spel med två spelare
     When spelare 1 lägger H E L (3 bokstäver) och claimar
     And spelare 2 accepterar
-    Then spelare 1 får poäng 9 (3² = 9)
+    Then spelare 1 får poäng 4 (2² = 4)
     And ordet återställs till tomt
-    And nästa spelers tur är spelare 1 (opponent of claimer)
+    And nästa spelers tur är spelare 2 (opponent of claimer)
 
   Scenario: Accept action consumes one accept from responder
     Given ett nytt API-spel med två spelare
@@ -35,9 +35,9 @@ Feature: Scoring calculation and turn rotation
     Given ett nytt API-spel med två spelare
     When spelare 1 bygger C A T och claimar
     And spelare 2 accepterar
-    Then nästa aktiv spelare är spelare 1 (motsats av claimer)
-    When spelare 1 bygger C A T igen och claimar
-    And spelare 2 accepterar
+    Then nästa aktiv spelare är spelare 2 (motsats av claimer)
+    When spelare 2 bygger C A T och claimar
+    And spelare 1 accepterar
     Then nästa aktiv spelare är spelare 1 (motsats av claimer)
 
   Scenario: Multiple scoring scenarios in same game
@@ -50,4 +50,4 @@ Feature: Scoring calculation and turn rotation
     Then spelare 2 får 6 poäng (2² × 1.5)
     When spelare 1 bygger T E S (2 letters) och claimar
     And spelare 2 bestrider och ord är ogiltigt
-    Then spelare 1 får 0, spelare 2 får 2 poäng totalt (2 + 6 = 8)
+    Then spelare 1 har totalt 4 och spelare 2 har totalt 8 poäng

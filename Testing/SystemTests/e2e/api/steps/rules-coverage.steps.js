@@ -51,7 +51,7 @@ async function claimWord(request, baseURL, gameId, token) {
   return parseResponse(claimRes);
 }
 
-Given('ett nytt API-spel med två spelare', async ({ request, baseURL }) => {
+Given('ett nytt API-spel med två spelare för regeltester', async ({ request, baseURL }) => {
   const createRes = await postNoBody(request, `${baseURL}/games`);
   expect(createRes.status()).toBe(201);
   const createData = await createRes.json();
@@ -134,12 +134,12 @@ Then('claimaren får inte acceptera eller bestrida sitt eget claim', async ({ re
   const acceptRes = await postNoBody(request, `${baseURL}/games/${state.gameId}/accept`, state.p1);
   const acceptParsed = await parseResponse(acceptRes);
   expect(acceptParsed.status).toBe(409);
-  expect((acceptParsed.body?.error ?? '')).toContain('Only the opponent');
+  expect((acceptParsed.body?.error ?? '')).toContain('Only the active player');
 
   const disputeRes = await postNoBody(request, `${baseURL}/games/${state.gameId}/dispute`, state.p1);
   const disputeParsed = await parseResponse(disputeRes);
   expect(disputeParsed.status).toBe(409);
-  expect((disputeParsed.body?.error ?? '')).toContain('Only the opponent');
+  expect((disputeParsed.body?.error ?? '')).toContain('Only the active player');
 });
 
 When('spelare 1 bygger CAT och claimar ordet', async ({ request, baseURL }) => {

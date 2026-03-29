@@ -2,6 +2,7 @@ import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
 const { Given, When, Then } = createBdd();
+const And = Then;
 
 const state = {
   gameId: null,
@@ -77,6 +78,30 @@ Then('får tredje spelaren status 409 "Game is not joinable"', async () => {
   expect((parsed.body?.error ?? '')).toContain('not joinable');
 });
 
+Given('ett nytt namngivet spel skapas med spelare Alice', async ({ request, baseURL }) => {
+  const createRes = await postJson(request, `${baseURL}/games`, { playerName: 'Alice' });
+  expect(createRes.status()).toBe(201);
+  const createData = await createRes.json();
+  state.gameId = createData.gameId;
+  state.p1 = createData.playerToken;
+});
+
+When('spelare Bob joinnar samma spel', async ({ request, baseURL }) => {
+  const joinRes = await postJson(request, `${baseURL}/games/${state.gameId}/join`, { playerName: 'Bob' });
+  expect(joinRes.status()).toBe(200);
+  const joinData = await joinRes.json();
+  state.p2 = joinData.playerToken;
+});
+
+Then('game state innehåller spelarnamnen Alice och Bob i turordning', async ({ request, baseURL }) => {
+  const getRes = await request.get(`${baseURL}/games/${state.gameId}`);
+  expect(getRes.status()).toBe(200);
+  const gameState = await getRes.json();
+  expect(gameState.players.length).toBe(2);
+  expect(gameState.players[0].playerName).toBe('Alice');
+  expect(gameState.players[1].playerName).toBe('Bob');
+});
+
 Given('ett nytt spel med två spelare', async ({ request, baseURL }) => {
   const createRes = await postNoBody(request, `${baseURL}/games`);
   expect(createRes.status()).toBe(201);
@@ -97,7 +122,7 @@ Then('returnerar servern samma spelare 2 token', async () => {
   expect(data.playerToken).toBe(state.p2);
 });
 
-Then('spelet förblir oförändrat (status och spelarantal)', async ({ request, baseURL }) => {
+Then('spelet förblir oförändrat \\(status och spelarantal\\)', async ({ request, baseURL }) => {
   const getRes = await request.get(`${baseURL}/games/${state.gameId}`);
   const gameState = await getRes.json();
   expect(gameState.status).toBe('InProgress');
@@ -178,10 +203,10 @@ Then('spelet är i status InProgress', async ({ request, baseURL }) => {
   expect(gameState.status).toBe('InProgress');
 });
 
-Then('spelet har fortfarande exakt 2 spelare (ingen duplicering)', async ({ request, baseURL }) => {
+Then('spelet har fortfarande exakt {int} spelare \\(ingen duplicering\\)', async ({ request, baseURL }, expectedPlayers) => {
   const res = await request.get(`${baseURL}/games/${state.gameId}`);
   const gameState = await res.json();
-  expect(gameState.players.length).toBe(2);
+  expect(gameState.players.length).toBe(expectedPlayers);
 });
 
 And('spelare 2 är samma player ID', async ({ request, baseURL }) => {
@@ -204,7 +229,7 @@ When('en helt ny speler försöker rejoin med ett falskt token', async ({ reques
   state.p2 = joinData.playerToken;
 });
 
-Then('behandlas detta som ny join (ingen rejoin match)', async ({ request, baseURL }) => {
+Then('behandlas detta som ny join \\(ingen rejoin match\\)', async ({ request, baseURL }) => {
   const res = await request.get(`${baseURL}/games/${state.gameId}`);
   const gameState = await res.json();
   expect(gameState.players.length).toBe(2);
