@@ -9,40 +9,44 @@ export const GameProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Load player from localStorage on mount
+  // Load player from tab-scoped storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('esl_player');
+    const saved = sessionStorage.getItem('esl_player') ?? localStorage.getItem('esl_player');
     if (saved) {
       try {
-        setPlayer(JSON.parse(saved));
+        const parsedPlayer = JSON.parse(saved);
+        setPlayer(parsedPlayer);
+        // One-time migration for users who previously used localStorage.
+        sessionStorage.setItem('esl_player', JSON.stringify(parsedPlayer));
       } catch (e) {
         console.error('Failed to load saved player', e);
       }
     }
 
-    const savedGame = localStorage.getItem('esl_game');
+    const savedGame = sessionStorage.getItem('esl_game') ?? localStorage.getItem('esl_game');
     if (savedGame) {
       try {
         const game = JSON.parse(savedGame);
         setGameId(game.gameId);
-        // Player token should be included in player object
+        // One-time migration for users who previously used localStorage.
+        sessionStorage.setItem('esl_game', JSON.stringify({ gameId: game.gameId }));
       } catch (e) {
         console.error('Failed to load saved game', e);
       }
     }
   }, []);
 
-  // Save player to localStorage whenever it changes
+  // Save player to tab-scoped storage whenever it changes
   useEffect(() => {
     if (player) {
-      localStorage.setItem('esl_player', JSON.stringify(player));
+      sessionStorage.setItem('esl_player', JSON.stringify(player));
     }
   }, [player]);
 
-  // Save game to localStorage whenever it changes
+  // Save game to tab-scoped storage whenever it changes
   useEffect(() => {
     if (gameId) {
-      localStorage.setItem('esl_game', JSON.stringify({ gameId }));
+      sessionStorage.setItem('esl_game', JSON.stringify({ gameId }));
     }
   }, [gameId]);
 
@@ -64,7 +68,13 @@ export const GameProvider = ({ children }) => {
     setError(null);
 
     try {
-      const res = await fetch('/games', { method: 'POST' });
+      const res = await fetch('/games', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playerName: player.playerName }),
+      });
       if (!res.ok) throw new Error('Failed to create game');
 
       const data = await res.json();
@@ -105,7 +115,11 @@ export const GameProvider = ({ children }) => {
 
       const res = await fetch(`/games/${joinGameId}/join`, {
         method: 'POST',
-        headers,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playerName: player.playerName }),
       });
 
       if (!res.ok) {
@@ -256,6 +270,9 @@ export const GameProvider = ({ children }) => {
     setPlayer(null);
     setGameId(null);
     setGameState(null);
+    sessionStorage.removeItem('esl_player');
+    sessionStorage.removeItem('esl_game');
+    // Also clear legacy keys in case they still exist from older versions.
     localStorage.removeItem('esl_player');
     localStorage.removeItem('esl_game');
   };

@@ -33,6 +33,7 @@ function CreateOrJoinPage() {
           <>
             <CreateGamePage />
             <button
+              data-testid="toggle-join"
               onClick={() => setShowJoin(true)}
               style={{ marginTop: '20px', width: '100%' }}
             >
@@ -43,6 +44,7 @@ function CreateOrJoinPage() {
           <>
             <JoinGamePage />
             <button
+              data-testid="toggle-create"
               onClick={() => setShowJoin(false)}
               style={{ marginTop: '20px', width: '100%' }}
             >

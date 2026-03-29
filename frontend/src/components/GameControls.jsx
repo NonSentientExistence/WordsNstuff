@@ -58,7 +58,7 @@ export default function GameControls({
 
   if (isFinished) {
     return (
-      <div className="game-controls" style={{ gridColumn: '1 / -1' }}>
+      <div className="game-controls" data-testid="game-controls-finished" style={{ gridColumn: '1 / -1' }}>
         <div className="game-over">
           <h2>Game Over!</h2>
           {gameState.players?.length > 0 && (() => {
@@ -72,11 +72,11 @@ export default function GameControls({
   }
 
   return (
-    <div className="game-controls" style={{ gridColumn: '1 / -1' }}>
+    <div className="game-controls" data-testid="game-controls" style={{ gridColumn: '1 / -1' }}>
       {isPendingDispute ? (
-        <div>
+        <div data-testid="pending-claim-panel">
           <h3>Pending Claim</h3>
-          <p style={{ marginBottom: '12px' }}>
+          <p data-testid="pending-word" style={{ marginBottom: '12px' }}>
             Word: <strong>{gameState.pendingWord}</strong>
           </p>
 
@@ -84,22 +84,23 @@ export default function GameControls({
             <p style={{ color: '#999' }}>Waiting for opponent to respond…</p>
           ) : (
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={handleAccept} disabled={loading || myAccepts <= 0} style={{ flex: 1 }}>
+              <button data-testid="accept-btn" onClick={handleAccept} disabled={loading || myAccepts <= 0} style={{ flex: 1 }}>
                 Accept ✓ ({myAccepts} left)
               </button>
-              <button onClick={handleDispute} disabled={loading || myDisputes <= 0} style={{ flex: 1 }}>
+              <button data-testid="dispute-btn" onClick={handleDispute} disabled={loading || myDisputes <= 0} style={{ flex: 1 }}>
                 Dispute ✗ ({myDisputes} left)
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div>
+        <div data-testid="turn-panel">
           {isMyTurn ? (
             <>
-              <h3>Your Turn</h3>
+              <h3 className="turn-indicator">Your Turn</h3>
               <div className="letter-input-group">
                 <input
+                  data-testid="letter-input"
                   type="text"
                   value={letter}
                   onChange={(e) => setLetter(e.target.value.toUpperCase())}
@@ -108,15 +109,34 @@ export default function GameControls({
                   maxLength="1"
                   autoFocus
                 />
-                <button onClick={handlePlayLetter} disabled={loading || !letter.trim()}>
+                <button data-testid="play-btn" onClick={handlePlayLetter} disabled={loading || !letter.trim()}>
                   Play
                 </button>
               </div>
             </>
-          ) : null}
+          ) : (
+            <>
+              <h3 className="turn-indicator" data-testid="their-turn-indicator">Their turn
+              </h3>
+              <div className="letter-input-group">
+                <input
+                  data-testid="letter-input"
+                  type="text"
+                  value={letter}
+                  placeholder="Waiting..."
+                  maxLength="1"
+                  disabled="disabled"
+                />
+                <button data-testid="play-btn" disabled="disabled">
+                  Play
+                </button>
+              </div>
+            </>
+          )}
 
           {canClaim && (
             <button
+              data-testid="claim-btn"
               onClick={handleClaimWord}
               disabled={loading}
               style={{ width: '100%', marginTop: '10px' }}

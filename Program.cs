@@ -77,16 +77,16 @@ app.MapGet("/client-ip", (HttpContext ctx) =>
     return Results.Ok(new { ip });
 });
 
-app.MapPost("/games", async (GamesService games) =>
+app.MapPost("/games", async (PlayerRegistrationRequest? req, GamesService games) =>
 {
-    var result = await games.CreateGameAsync();
+    var result = await games.CreateGameAsync(req?.PlayerName);
     return Results.Created($"/games/{result.GameId}", result);
 });
 
-app.MapPost("/games/{gameId:guid}/join", async (Guid gameId, HttpRequest http, GamesService games) =>
+app.MapPost("/games/{gameId:guid}/join", async (Guid gameId, PlayerRegistrationRequest? req, HttpRequest http, GamesService games) =>
 {
     var playerToken = TryGetPlayerToken(http);
-    var result = await games.JoinGameAsync(gameId, playerToken);
+    var result = await games.JoinGameAsync(gameId, req?.PlayerName, playerToken);
     return Results.Ok(result);
 });
 

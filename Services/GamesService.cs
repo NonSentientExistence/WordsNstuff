@@ -38,10 +38,11 @@ public sealed class GamesService
         _definition = definition;
     }
 
-    public async Task<CreateGameResponse> CreateGameAsync()
+    public async Task<CreateGameResponse> CreateGameAsync(string? playerName)
     {
         var gameId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
+        var normalizedPlayerName = NormalizePlayerName(playerName, "Player 1");
 
         await using var conn = await _ds.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
@@ -70,7 +71,7 @@ public sealed class GamesService
             gameCmd.Parameters.AddWithValue("disputes", _definition.InitialDisputes);
             await gameCmd.ExecuteNonQueryAsync();
 
-            await InsertPlayerAsync(conn, tx, gameId, playerId, turnOrder: 0);
+            await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, turnOrder: 0);
             await InsertLegacyScoreAsync(conn, tx, gameId, playerId);
 
             await tx.CommitAsync();
@@ -84,9 +85,10 @@ public sealed class GamesService
         return new CreateGameResponse(gameId, playerId);
     }
 
-    public async Task<JoinGameResponse> JoinGameAsync(Guid gameId, Guid? existingPlayerToken = null)
+    public async Task<JoinGameResponse> JoinGameAsync(Guid gameId, string? playerName, Guid? existingPlayerToken = null)
     {
         var playerId = Guid.NewGuid();
+        var normalizedPlayerName = NormalizePlayerName(playerName, "Player 2");
 
         await using var conn = await _ds.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
@@ -107,7 +109,7 @@ public sealed class GamesService
 
             var nextTurnOrder = players.Count;
 
-            await InsertPlayerAsync(conn, tx, gameId, playerId, nextTurnOrder);
+            await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, nextTurnOrder);
             await InsertLegacyScoreAsync(conn, tx, gameId, playerId);
 
             var joinedPlayerCount = players.Count + 1;
@@ -395,16 +397,17 @@ public sealed class GamesService
         return player;
     }
 
-    private async Task InsertPlayerAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, int turnOrder)
+    private async Task InsertPlayerAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, string playerName, int turnOrder)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = """
-            insert into game_players (game_id, player_id, turn_order, score, accepts_left, disputes_left, joined_at)
-            values (@gid, @pid, @turnOrder, 0, @accepts, @disputes, now())
+            insert into game_players (game_id, player_id, player_name, turn_order, score, accepts_left, disputes_left, joined_at)
+            values (@gid, @pid, @playerName, @turnOrder, 0, @accepts, @disputes, now())
         """;
         cmd.Parameters.AddWithValue("gid", gameId);
         cmd.Parameters.AddWithValue("pid", playerId);
+        cmd.Parameters.AddWithValue("playerName", playerName);
         cmd.Parameters.AddWithValue("turnOrder", turnOrder);
         cmd.Parameters.AddWithValue("accepts", _definition.InitialAccepts);
         cmd.Parameters.AddWithValue("disputes", _definition.InitialDisputes);
@@ -482,7 +485,7 @@ public sealed class GamesService
     {
         var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            select player_id, turn_order, score, accepts_left, disputes_left
+            select player_id, player_name, turn_order, score, accepts_left, disputes_left
             from game_players
             where game_id=@gid
             order by turn_order asc
@@ -495,10 +498,11 @@ public sealed class GamesService
         {
             result.Add(new GamePlayerState(
                 reader.GetGuid(0),
-                reader.GetInt32(1),
+                reader.GetString(1),
                 reader.GetInt32(2),
                 reader.GetInt32(3),
-                reader.GetInt32(4)
+                reader.GetInt32(4),
+                reader.GetInt32(5)
             ));
         }
         return result;
@@ -509,7 +513,7 @@ public sealed class GamesService
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = """
-            select player_id, turn_order, score, accepts_left, disputes_left
+            select player_id, player_name, turn_order, score, accepts_left, disputes_left
             from game_players
             where game_id=@gid
             order by turn_order asc
@@ -523,13 +527,22 @@ public sealed class GamesService
         {
             result.Add(new GamePlayerState(
                 reader.GetGuid(0),
-                reader.GetInt32(1),
+                reader.GetString(1),
                 reader.GetInt32(2),
                 reader.GetInt32(3),
-                reader.GetInt32(4)
+                reader.GetInt32(4),
+                reader.GetInt32(5)
             ));
         }
         return result;
+    }
+
+    private static string NormalizePlayerName(string? playerName, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(playerName))
+            return fallback;
+
+        return playerName.Trim();
     }
 
     private async Task<int> GetContributionCountAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId)

@@ -19,7 +19,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main>
+    <main data-testid="register-page">
       <div className="card">
         <h1>EverySecondLetter</h1>
         <h2>Register Player</h2>
@@ -30,6 +30,7 @@ export default function RegisterPage() {
           <div className="form-group">
             <label htmlFor="playerName">Your Name</label>
             <input
+              data-testid="player-name-input"
               id="playerName"
               type="text"
               value={playerName}
@@ -39,7 +40,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button type="submit" style={{ width: '100%' }}>
+          <button data-testid="register-continue" type="submit" style={{ width: '100%' }}>
             Continue
           </button>
         </form>

@@ -57,7 +57,7 @@ export default function CreateGamePage() {
   }
 
   return (
-    <div>
+    <div data-testid="create-page">
       <h2>Create New Game</h2>
 
       {error && <div className="error">{error}</div>}
@@ -67,6 +67,7 @@ export default function CreateGamePage() {
       </div>
 
       <button
+        data-testid="create-game-btn"
         onClick={handleCreateGame}
         disabled={loading}
         style={{ width: '100%', marginTop: '20px' }}

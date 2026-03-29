@@ -68,6 +68,7 @@ public static class SeedDb
             create table if not exists game_players (
               game_id uuid not null references games(id) on delete cascade,
               player_id uuid not null,
+              player_name text not null default '',
               turn_order int not null,
               score int not null default 0,
               accepts_left int not null default 5,
@@ -76,6 +77,9 @@ public static class SeedDb
               primary key (game_id, player_id),
               unique (game_id, turn_order)
             );
+
+            alter table game_players
+              add column if not exists player_name text not null default '';
         """;
     await cmd.ExecuteNonQueryAsync();
   }
@@ -129,6 +133,7 @@ public static class SeedDb
             create table if not exists game_players (
               game_id uuid not null references games(id) on delete cascade,
               player_id uuid not null,
+              player_name text not null default '',
               turn_order int not null,
               score int not null default 0,
               accepts_left int not null default 5,
@@ -137,6 +142,9 @@ public static class SeedDb
               primary key (game_id, player_id),
               unique (game_id, turn_order)
             );
+
+            alter table game_players
+              add column if not exists player_name text not null default '';
 
             -- accept/dispute counters
             alter table games

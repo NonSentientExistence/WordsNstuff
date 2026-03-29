@@ -14,6 +14,8 @@ public sealed record CreateGameResponse(Guid GameId, Guid PlayerToken);
 
 public sealed record JoinGameResponse(Guid GameId, Guid PlayerToken);
 
+public sealed record PlayerRegistrationRequest(string? PlayerName);
+
 public sealed record PlayLetterRequest(string Letter);
 
 public sealed record ValidateWordRequest(
@@ -23,6 +25,7 @@ public sealed record ValidateWordRequest(
 
 public sealed record GamePlayerState(
     Guid PlayerId,
+  string PlayerName,
     int TurnOrder,
     int Score,
     int AcceptsRemaining,

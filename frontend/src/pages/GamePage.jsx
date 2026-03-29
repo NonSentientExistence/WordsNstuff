@@ -29,12 +29,14 @@ export default function GamePage() {
   const isFinished = gameState?.status === 'Finished';
   const areYouPlayer1 = gameState?.player1Id === player?.token;
   const areYouPlayer2 = gameState?.player2Id === player?.token;
+  const player1DisplayName = gameState?.players?.[0]?.playerName?.trim() || 'Player 1';
+  const player2DisplayName = gameState?.players?.[1]?.playerName?.trim() || 'Player 2';
 
   // --- Loading state (first fetch not yet complete) ---
   if (!gameState) {
     return (
-      <main>
-        <div className="card">
+      <main data-testid="game-loading-page">
+        <div className="card" data-testid="game-loading-card">
           <div className="game-header">
             <h1>EverySecondLetter</h1>
             <button onClick={logout} className="logout-btn">Leave</button>
@@ -48,8 +50,8 @@ export default function GamePage() {
   // --- Waiting for second player ---
   if (isWaiting) {
     return (
-      <main>
-        <div className="card">
+      <main data-testid="game-waiting-page">
+        <div className="card" data-testid="game-waiting-card">
           <div className="game-header">
             <h1>EverySecondLetter</h1>
             <button onClick={logout} className="logout-btn">Leave</button>
@@ -61,10 +63,11 @@ export default function GamePage() {
 
           <div className="info-box" style={{ marginTop: '16px' }}>
             <p><strong>Game ID</strong></p>
-            <p style={{ fontFamily: 'monospace', wordBreak: 'break-all', marginTop: '8px', fontSize: '14px' }}>
+            <p data-testid="game-id-text" style={{ fontFamily: 'monospace', wordBreak: 'break-all', marginTop: '8px', fontSize: '14px' }}>
               {gameId}
             </p>
             <button
+              data-testid="copy-game-id-btn"
               onClick={() => navigator.clipboard.writeText(gameId)}
               style={{ marginTop: '10px', width: '100%' }}
             >
@@ -82,8 +85,8 @@ export default function GamePage() {
 
   // --- Active / finished game ---
   return (
-    <main>
-      <div className="card">
+    <main data-testid="game-active-page">
+      <div className="card" data-testid="game-active-card">
         <div className="game-header">
           <h1>EverySecondLetter</h1>
           <button onClick={logout} className="logout-btn">Leave</button>
@@ -93,7 +96,9 @@ export default function GamePage() {
 
         <div className="game-grid">
           <div>
-            <h3>Status: {gameState.status}</h3>
+            <h3>
+              Status: <span data-testid="game-status">{gameState.status}</span>
+            </h3>
             {isFinished && <div className="success" style={{ marginTop: '8px' }}>Game Over!</div>}
             {isMyTurn && !isPendingDispute && !isFinished && (
               <div className="info-box" style={{ marginTop: '8px' }}>It's your turn!</div>
@@ -106,11 +111,11 @@ export default function GamePage() {
           <WordDisplay word={gameState.currentWord} />
 
           <ScoreBoard
-            player1Name={areYouPlayer1 ? `You (${player.playerName})` : 'Opponent'}
+            player1Name={areYouPlayer1 ? `You (${player.playerName})` : `They (${player1DisplayName})`}
             player1Score={gameState.player1Score}
             player1Accepts={gameState.player1Accepts}
             player1Disputes={gameState.player1Disputes}
-            player2Name={areYouPlayer2 ? `You (${player.playerName})` : 'Opponent'}
+            player2Name={areYouPlayer2 ? `You (${player.playerName})` : `They (${player2DisplayName})`}
             player2Score={gameState.player2Score}
             player2Accepts={gameState.player2Accepts}
             player2Disputes={gameState.player2Disputes}

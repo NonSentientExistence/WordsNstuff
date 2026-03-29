@@ -46,7 +46,7 @@ export default function JoinGamePage() {
   }
 
   return (
-    <div>
+    <div data-testid="join-page">
       <h2>Join Game</h2>
 
       {error && <div className="error">{error}</div>}
@@ -55,6 +55,7 @@ export default function JoinGamePage() {
         <div className="form-group">
           <label htmlFor="gameId">Game ID</label>
           <input
+            data-testid="join-game-id-input"
             id="gameId"
             type="text"
             value={gameId}
@@ -64,7 +65,7 @@ export default function JoinGamePage() {
           />
         </div>
 
-        <button type="submit" disabled={loading || !gameId.trim()} style={{ width: '100%' }}>
+        <button data-testid="join-game-btn" type="submit" disabled={loading || !gameId.trim()} style={{ width: '100%' }}>
           {loading ? 'Joining...' : 'Join Game'}
         </button>
       </form>
