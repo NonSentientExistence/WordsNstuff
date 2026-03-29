@@ -1,12 +1,14 @@
+using System.Data.Common;
 using System.Text.Json;
-using Npgsql;
 using EverySecondLetter.Gameplay.EverySecondLetter;
+using EverySecondLetter.Services.Database;
 
 namespace EverySecondLetter.Services;
 
 public sealed class GamesService
 {
-    private readonly NpgsqlDataSource _ds;
+    private readonly IDbConnectionFactory _connections;
+    private readonly ISqlDialect _dialect;
     private readonly WordsService _words;
     private readonly EverySecondLetterGameDefinition _definition;
 
@@ -31,9 +33,10 @@ public sealed class GamesService
         string PointsJson
     );
 
-    public GamesService(NpgsqlDataSource ds, WordsService words, EverySecondLetterGameDefinition definition)
+    public GamesService(IDbConnectionFactory connections, ISqlDialect dialect, WordsService words, EverySecondLetterGameDefinition definition)
     {
-        _ds = ds;
+        _connections = connections;
+        _dialect = dialect;
         _words = words;
         _definition = definition;
     }
@@ -44,14 +47,14 @@ public sealed class GamesService
         var playerId = Guid.NewGuid();
         var normalizedPlayerName = NormalizePlayerName(playerName, "Player 1");
 
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
         try
         {
             var gameCmd = conn.CreateCommand();
             gameCmd.Transaction = tx;
-            gameCmd.CommandText = """
+            gameCmd.CommandText = $"""
                 insert into games (
                     id, status, current_word, active_player_id, player1_id, player2_id,
                     pending_claimer_id, pending_word,
@@ -61,14 +64,14 @@ public sealed class GamesService
                     @id, @status, '', @active, @p1, null,
                     null, null,
                     @accepts, @disputes, @accepts, @disputes,
-                    now(), now(), null);
+                    {_dialect.NowExpression}, {_dialect.NowExpression}, null);
             """;
-            gameCmd.Parameters.AddWithValue("id", gameId);
-            gameCmd.Parameters.AddWithValue("status", GameStatus.WaitingForPlayers.ToString());
-            gameCmd.Parameters.AddWithValue("active", playerId);
-            gameCmd.Parameters.AddWithValue("p1", playerId);
-            gameCmd.Parameters.AddWithValue("accepts", _definition.InitialAccepts);
-            gameCmd.Parameters.AddWithValue("disputes", _definition.InitialDisputes);
+            AddParam(gameCmd, "id", gameId);
+            AddParam(gameCmd, "status", GameStatus.WaitingForPlayers.ToString());
+            AddParam(gameCmd, "active", playerId);
+            AddParam(gameCmd, "p1", playerId);
+            AddParam(gameCmd, "accepts", _definition.InitialAccepts);
+            AddParam(gameCmd, "disputes", _definition.InitialDisputes);
             await gameCmd.ExecuteNonQueryAsync();
 
             await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, turnOrder: 0);
@@ -90,7 +93,7 @@ public sealed class GamesService
         var playerId = Guid.NewGuid();
         var normalizedPlayerName = NormalizePlayerName(playerName, "Player 2");
 
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
         try
@@ -118,26 +121,26 @@ public sealed class GamesService
             var update = conn.CreateCommand();
             update.Transaction = tx;
             update.CommandText = shouldStart
-                ? """
+                ? $"""
                     update games
                     set status=@status,
                         active_player_id=@active,
                         player2_id=coalesce(player2_id, @joinedPlayer),
-                        updated_at=now()
+                        updated_at={_dialect.NowExpression}
                     where id=@id
                 """
-                : """
+                : $"""
                     update games
                     set player2_id=coalesce(player2_id, @joinedPlayer),
-                        updated_at=now()
+                        updated_at={_dialect.NowExpression}
                     where id=@id
                 """;
-            update.Parameters.AddWithValue("id", gameId);
-            update.Parameters.AddWithValue("joinedPlayer", playerId);
+            AddParam(update, "id", gameId);
+            AddParam(update, "joinedPlayer", playerId);
             if (shouldStart)
             {
-                update.Parameters.AddWithValue("status", GameStatus.InProgress.ToString());
-                update.Parameters.AddWithValue("active", players[0].PlayerId);
+                AddParam(update, "status", GameStatus.InProgress.ToString());
+                AddParam(update, "active", players[0].PlayerId);
             }
             await update.ExecuteNonQueryAsync();
 
@@ -154,7 +157,7 @@ public sealed class GamesService
 
     public async Task<GameStateDto> GetStateAsync(Guid gameId)
     {
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
 
         var game = await ReadGameAsync(conn, gameId);
         var players = await ReadPlayersAsync(conn, gameId);
@@ -177,7 +180,7 @@ public sealed class GamesService
     {
         var normalized = _definition.NormalizeLetter(letter);
 
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
         try
@@ -202,24 +205,24 @@ public sealed class GamesService
                 on conflict (game_id, player_id)
                 do update set count = contributions.count + 1
             """;
-            contrib.Parameters.AddWithValue("gid", gameId);
-            contrib.Parameters.AddWithValue("pid", playerToken);
+            AddParam(contrib, "gid", gameId);
+            AddParam(contrib, "pid", playerToken);
             await contrib.ExecuteNonQueryAsync();
 
             var update = conn.CreateCommand();
             update.Transaction = tx;
-            update.CommandText = """
+            update.CommandText = $"""
                 update games
                 set current_word=@word,
                     active_player_id=@next,
                     last_letter_player_id=@last,
-                    updated_at=now()
+                    updated_at={_dialect.NowExpression}
                 where id=@id
             """;
-            update.Parameters.AddWithValue("word", game.CurrentWord + normalized);
-            update.Parameters.AddWithValue("next", nextPlayerId);
-            update.Parameters.AddWithValue("last", playerToken);
-            update.Parameters.AddWithValue("id", gameId);
+            AddParam(update, "word", game.CurrentWord + normalized);
+            AddParam(update, "next", nextPlayerId);
+            AddParam(update, "last", playerToken);
+            AddParam(update, "id", gameId);
             await update.ExecuteNonQueryAsync();
 
             await tx.CommitAsync();
@@ -235,7 +238,7 @@ public sealed class GamesService
 
     public async Task<GameStateDto> ClaimWordAsync(Guid gameId, Guid playerToken)
     {
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
         try
@@ -252,18 +255,18 @@ public sealed class GamesService
 
             var update = conn.CreateCommand();
             update.Transaction = tx;
-            update.CommandText = """
+            update.CommandText = $"""
                 update games
                 set status=@status,
                     pending_claimer_id=@claimer,
                     pending_word=@word,
-                    updated_at=now()
+                    updated_at={_dialect.NowExpression}
                 where id=@id
             """;
-            update.Parameters.AddWithValue("status", GameStatus.PendingDispute.ToString());
-            update.Parameters.AddWithValue("claimer", playerToken);
-            update.Parameters.AddWithValue("word", game.CurrentWord);
-            update.Parameters.AddWithValue("id", gameId);
+            AddParam(update, "status", GameStatus.PendingDispute.ToString());
+            AddParam(update, "claimer", playerToken);
+            AddParam(update, "word", game.CurrentWord);
+            AddParam(update, "id", gameId);
             await update.ExecuteNonQueryAsync();
 
             await tx.CommitAsync();
@@ -289,7 +292,7 @@ public sealed class GamesService
 
     private async Task<GameStateDto> ResolveClaimAsync(Guid gameId, Guid playerToken, bool disputed)
     {
-        await using var conn = await _ds.OpenConnectionAsync();
+        await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
         try
@@ -344,16 +347,16 @@ public sealed class GamesService
             var reset = conn.CreateCommand();
             reset.Transaction = tx;
             reset.CommandText = gameOver
-                ? """
+                ? $"""
                     delete from contributions where game_id=@gid;
                     update games
                     set status=@status,
                         pending_claimer_id=null,
                         pending_word=null,
-                        updated_at=now()
+                        updated_at={_dialect.NowExpression}
                     where id=@gid
                 """
-                : """
+                : $"""
                     delete from contributions where game_id=@gid;
                     update games
                     set status=@status,
@@ -362,13 +365,13 @@ public sealed class GamesService
                         pending_claimer_id=null,
                         pending_word=null,
                         last_letter_player_id=null,
-                        updated_at=now()
+                        updated_at={_dialect.NowExpression}
                     where id=@gid
                 """;
-            reset.Parameters.AddWithValue("gid", gameId);
-            reset.Parameters.AddWithValue("status", (gameOver ? GameStatus.Finished : GameStatus.InProgress).ToString());
+            AddParam(reset, "gid", gameId);
+            AddParam(reset, "status", (gameOver ? GameStatus.Finished : GameStatus.InProgress).ToString());
             if (!gameOver)
-                reset.Parameters.AddWithValue("active", responderId);
+                AddParam(reset, "active", responderId);
             await reset.ExecuteNonQueryAsync();
 
             await tx.CommitAsync();
@@ -397,24 +400,24 @@ public sealed class GamesService
         return player;
     }
 
-    private async Task InsertPlayerAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, string playerName, int turnOrder)
+    private async Task InsertPlayerAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId, string playerName, int turnOrder)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             insert into game_players (game_id, player_id, player_name, turn_order, score, accepts_left, disputes_left, joined_at)
-            values (@gid, @pid, @playerName, @turnOrder, 0, @accepts, @disputes, now())
+            values (@gid, @pid, @playerName, @turnOrder, 0, @accepts, @disputes, {_dialect.NowExpression})
         """;
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
-        cmd.Parameters.AddWithValue("playerName", playerName);
-        cmd.Parameters.AddWithValue("turnOrder", turnOrder);
-        cmd.Parameters.AddWithValue("accepts", _definition.InitialAccepts);
-        cmd.Parameters.AddWithValue("disputes", _definition.InitialDisputes);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
+        AddParam(cmd, "playerName", playerName);
+        AddParam(cmd, "turnOrder", turnOrder);
+        AddParam(cmd, "accepts", _definition.InitialAccepts);
+        AddParam(cmd, "disputes", _definition.InitialDisputes);
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private static async Task InsertLegacyScoreAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId)
+    private static async Task InsertLegacyScoreAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -423,12 +426,12 @@ public sealed class GamesService
             values (@gid, @pid, 0)
             on conflict (game_id, player_id) do nothing
         """;
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private async Task<GameRow> ReadGameAsync(NpgsqlConnection conn, Guid gameId)
+    private async Task<GameRow> ReadGameAsync(DbConnection conn, Guid gameId)
     {
         var cmd = conn.CreateCommand();
         cmd.CommandText = """
@@ -437,7 +440,7 @@ public sealed class GamesService
             from games
             where id=@id
         """;
-        cmd.Parameters.AddWithValue("id", gameId);
+        AddParam(cmd, "id", gameId);
 
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync())
@@ -446,18 +449,18 @@ public sealed class GamesService
         return MapGameRow(reader);
     }
 
-    private async Task<GameRow> ReadGameForUpdateAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId)
+    private async Task<GameRow> ReadGameForUpdateAsync(DbConnection conn, DbTransaction tx, Guid gameId)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             select id, status, current_word, active_player_id, pending_claimer_id,
                    pending_word, last_letter_player_id, player1_id, player2_id
             from games
             where id=@id
-            for update
+            {_dialect.ForUpdateClause}
         """;
-        cmd.Parameters.AddWithValue("id", gameId);
+        AddParam(cmd, "id", gameId);
 
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync())
@@ -466,22 +469,22 @@ public sealed class GamesService
         return MapGameRow(reader);
     }
 
-    private static GameRow MapGameRow(NpgsqlDataReader reader)
+    private static GameRow MapGameRow(DbDataReader reader)
     {
         return new GameRow(
-            reader.GetGuid(0),
+            ReadGuid(reader, 0),
             Enum.Parse<GameStatus>(reader.GetString(1)),
             reader.GetString(2),
-            reader.IsDBNull(3) ? null : reader.GetGuid(3),
-            reader.IsDBNull(4) ? null : reader.GetGuid(4),
+            ReadNullableGuid(reader, 3),
+            ReadNullableGuid(reader, 4),
             reader.IsDBNull(5) ? null : reader.GetString(5),
-            reader.IsDBNull(6) ? null : reader.GetGuid(6),
-            reader.GetGuid(7),
-            reader.IsDBNull(8) ? null : reader.GetGuid(8)
+            ReadNullableGuid(reader, 6),
+            ReadGuid(reader, 7),
+            ReadNullableGuid(reader, 8)
         );
     }
 
-    private async Task<List<GamePlayerState>> ReadPlayersAsync(NpgsqlConnection conn, Guid gameId)
+    private async Task<List<GamePlayerState>> ReadPlayersAsync(DbConnection conn, Guid gameId)
     {
         var cmd = conn.CreateCommand();
         cmd.CommandText = """
@@ -490,14 +493,14 @@ public sealed class GamesService
             where game_id=@gid
             order by turn_order asc
         """;
-        cmd.Parameters.AddWithValue("gid", gameId);
+        AddParam(cmd, "gid", gameId);
 
         var result = new List<GamePlayerState>();
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
             result.Add(new GamePlayerState(
-                reader.GetGuid(0),
+                ReadGuid(reader, 0),
                 reader.GetString(1),
                 reader.GetInt32(2),
                 reader.GetInt32(3),
@@ -508,25 +511,25 @@ public sealed class GamesService
         return result;
     }
 
-    private async Task<List<GamePlayerState>> ReadPlayersForUpdateAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId)
+    private async Task<List<GamePlayerState>> ReadPlayersForUpdateAsync(DbConnection conn, DbTransaction tx, Guid gameId)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             select player_id, player_name, turn_order, score, accepts_left, disputes_left
             from game_players
             where game_id=@gid
             order by turn_order asc
-            for update
+            {_dialect.ForUpdateClause}
         """;
-        cmd.Parameters.AddWithValue("gid", gameId);
+        AddParam(cmd, "gid", gameId);
 
         var result = new List<GamePlayerState>();
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
             result.Add(new GamePlayerState(
-                reader.GetGuid(0),
+                ReadGuid(reader, 0),
                 reader.GetString(1),
                 reader.GetInt32(2),
                 reader.GetInt32(3),
@@ -545,18 +548,18 @@ public sealed class GamesService
         return playerName.Trim();
     }
 
-    private async Task<int> GetContributionCountAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId)
+    private static async Task<int> GetContributionCountAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = "select coalesce(count, 0) from contributions where game_id=@gid and player_id=@pid";
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
         var value = await cmd.ExecuteScalarAsync();
         return Convert.ToInt32(value);
     }
 
-    private static async Task AddScoreAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, int delta)
+    private static async Task AddScoreAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId, int delta)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -565,15 +568,15 @@ public sealed class GamesService
             set score = score + @delta
             where game_id=@gid and player_id=@pid
         """;
-        cmd.Parameters.AddWithValue("delta", delta);
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
+        AddParam(cmd, "delta", delta);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
         var rows = await cmd.ExecuteNonQueryAsync();
         if (rows == 0)
             throw new ApiException(500, "Player score row missing.");
     }
 
-    private static async Task AddLegacyScoreAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, int delta)
+    private static async Task AddLegacyScoreAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId, int delta)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
@@ -582,21 +585,21 @@ public sealed class GamesService
             set score = score + @delta
             where game_id=@gid and player_id=@pid
         """;
-        cmd.Parameters.AddWithValue("delta", delta);
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
+        AddParam(cmd, "delta", delta);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private static async Task ConsumeResponseAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Guid gameId, Guid playerId, bool disputed, IReadOnlyList<GamePlayerState> players)
+    private async Task ConsumeResponseAsync(DbConnection conn, DbTransaction tx, Guid gameId, Guid playerId, bool disputed, IReadOnlyList<GamePlayerState> players)
     {
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = disputed
             ? "update game_players set disputes_left = disputes_left - 1 where game_id=@gid and player_id=@pid"
             : "update game_players set accepts_left = accepts_left - 1 where game_id=@gid and player_id=@pid";
-        cmd.Parameters.AddWithValue("gid", gameId);
-        cmd.Parameters.AddWithValue("pid", playerId);
+        AddParam(cmd, "gid", gameId);
+        AddParam(cmd, "pid", playerId);
         await cmd.ExecuteNonQueryAsync();
 
         var index = players.ToList().FindIndex(player => player.PlayerId == playerId);
@@ -606,19 +609,19 @@ public sealed class GamesService
             legacy.Transaction = tx;
             legacy.CommandText = index == 0
                 ? (disputed
-                    ? "update games set p1_disputes = greatest(p1_disputes - 1, 0) where id=@gid"
-                    : "update games set p1_accepts = greatest(p1_accepts - 1, 0) where id=@gid")
+                    ? $"update games set p1_disputes = {_dialect.ClampToZero("p1_disputes - 1")} where id=@gid"
+                    : $"update games set p1_accepts = {_dialect.ClampToZero("p1_accepts - 1")} where id=@gid")
                 : (disputed
-                    ? "update games set p2_disputes = greatest(p2_disputes - 1, 0) where id=@gid"
-                    : "update games set p2_accepts = greatest(p2_accepts - 1, 0) where id=@gid");
-            legacy.Parameters.AddWithValue("gid", gameId);
+                    ? $"update games set p2_disputes = {_dialect.ClampToZero("p2_disputes - 1")} where id=@gid"
+                    : $"update games set p2_accepts = {_dialect.ClampToZero("p2_accepts - 1")} where id=@gid");
+            AddParam(legacy, "gid", gameId);
             await legacy.ExecuteNonQueryAsync();
         }
     }
 
     private async Task InsertWordHistoryAsync(
-        NpgsqlConnection conn,
-        NpgsqlTransaction tx,
+        DbConnection conn,
+        DbTransaction tx,
         GameRow game,
         List<PlayerPoints> pointEntries,
         bool isValidWord,
@@ -631,31 +634,31 @@ public sealed class GamesService
 
         var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             insert into word_history (id, game_id, word, claimer_id, p1_points, p2_points, is_valid, created_at, points_json)
-            values (@id, @gid, @word, @claimer, @p1, @p2, @valid, now(), @points::jsonb)
+            values (@id, @gid, @word, @claimer, @p1, @p2, @valid, {_dialect.NowExpression}, {_dialect.JsonParameter("@points")})
         """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
-        cmd.Parameters.AddWithValue("gid", game.GameId);
-        cmd.Parameters.AddWithValue("word", game.PendingWord ?? string.Empty);
-        cmd.Parameters.AddWithValue("claimer", game.PendingClaimerId ?? Guid.Empty);
-        cmd.Parameters.AddWithValue("p1", player1Points);
-        cmd.Parameters.AddWithValue("p2", player2Points);
-        cmd.Parameters.AddWithValue("valid", isValidWord);
-        cmd.Parameters.AddWithValue("points", JsonSerializer.Serialize(pointEntries));
+        AddParam(cmd, "id", Guid.NewGuid());
+        AddParam(cmd, "gid", game.GameId);
+        AddParam(cmd, "word", game.PendingWord ?? string.Empty);
+        AddParam(cmd, "claimer", game.PendingClaimerId ?? Guid.Empty);
+        AddParam(cmd, "p1", player1Points);
+        AddParam(cmd, "p2", player2Points);
+        AddParam(cmd, "valid", isValidWord);
+        AddParam(cmd, "points", JsonSerializer.Serialize(pointEntries));
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private async Task<List<WordHistoryEntry>> ReadWordHistoryAsync(NpgsqlConnection conn, Guid gameId, IReadOnlyList<GamePlayerState> players)
+    private async Task<List<WordHistoryEntry>> ReadWordHistoryAsync(DbConnection conn, Guid gameId, IReadOnlyList<GamePlayerState> players)
     {
         var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            select word, claimer_id, is_valid, p1_points, p2_points, coalesce(points_json::text, '[]')
+        cmd.CommandText = $"""
+            select word, claimer_id, is_valid, p1_points, p2_points, coalesce({_dialect.JsonToText("points_json")}, '[]')
             from word_history
             where game_id=@gid
             order by created_at asc
         """;
-        cmd.Parameters.AddWithValue("gid", gameId);
+        AddParam(cmd, "gid", gameId);
 
         var rows = new List<HistoryRow>();
         await using var reader = await cmd.ExecuteReaderAsync();
@@ -663,8 +666,8 @@ public sealed class GamesService
         {
             rows.Add(new HistoryRow(
                 reader.GetString(0),
-                reader.GetGuid(1),
-                reader.GetBoolean(2),
+                ReadGuid(reader, 1),
+                ReadBool(reader, 2),
                 reader.GetInt32(3),
                 reader.GetInt32(4),
                 reader.GetString(5)
@@ -694,5 +697,45 @@ public sealed class GamesService
                 row.LegacyPlayer2Points
             );
         }).ToList();
+    }
+
+    private static void AddParam(DbCommand cmd, string name, object? value)
+    {
+        var p = cmd.CreateParameter();
+        p.ParameterName = name;
+        p.Value = value ?? DBNull.Value;
+        cmd.Parameters.Add(p);
+    }
+
+    private static Guid ReadGuid(DbDataReader reader, int ordinal)
+    {
+        var raw = reader.GetValue(ordinal);
+        return raw switch
+        {
+            Guid guid => guid,
+            string str => Guid.Parse(str),
+            byte[] bytes => new Guid(bytes),
+            _ => Guid.Parse(Convert.ToString(raw) ?? throw new ApiException(500, "Invalid GUID value in database."))
+        };
+    }
+
+    private static Guid? ReadNullableGuid(DbDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+            return null;
+        return ReadGuid(reader, ordinal);
+    }
+
+    private static bool ReadBool(DbDataReader reader, int ordinal)
+    {
+        var raw = reader.GetValue(ordinal);
+        return raw switch
+        {
+            bool b => b,
+            long l => l != 0,
+            int i => i != 0,
+            string s => bool.TryParse(s, out var parsed) ? parsed : s != "0",
+            _ => Convert.ToBoolean(raw)
+        };
     }
 }

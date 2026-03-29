@@ -60,6 +60,46 @@ Applikationen laser anslutningsstrang fran:
 
 launchSettings.json innehaller lokala standardvarden, men DATABASE_URL kan skriva over.
 
+### 3) Byt Databasprovider (Postgres eller SQLite)
+
+Du kan byta provider via miljovariabler eller config.
+
+Prioritetsordning:
+
+1. ConnectionStrings:Default
+2. DATABASE_URL
+3. DB_PROVIDER + SQLITE_PATH (SQLite-lage)
+
+Om inget anges blir standard/fallback SQLite.
+
+Rekommenderad anvandning:
+
+- Lokal utveckling: miljovariabler
+- Delad/stabil setup: configfil (ConnectionStrings:Default)
+- CI/deploy: miljovariabler
+
+Anvand SQLite via env:
+
+```bash
+export DB_PROVIDER=sqlite
+export SQLITE_PATH=every_second_letter.db
+dotnet run
+```
+
+Anvand Postgres via env:
+
+```bash
+export DB_PROVIDER=postgres
+export DATABASE_URL=postgres://user:pass@host:5432/db
+dotnet run
+```
+
+Anvand configfil:
+
+- Satt ConnectionStrings:Default till antingen:
+  - Postgres-anslutningsstrang, eller
+  - SQLite-anslutningsstrang, till exempel: Data Source=every_second_letter.db
+
 ## Korlage
 
 ### Utveckling (rekommenderas)

@@ -1,161 +1,232 @@
-using Npgsql;
+using System.Data.Common;
+using EverySecondLetter.Services.Database;
 
 namespace EverySecondLetter.Services;
 
 public static class SeedDb
 {
-  public static async Task InitializeAsync(NpgsqlDataSource ds)
-  {
-    await using var conn = await ds.OpenConnectionAsync();
-
-    // Check if tables exist
-    var tablesExist = await TablesExistAsync(conn);
-
-    if (!tablesExist)
+  public static async Task InitializeAsync(IDbConnectionFactory connections, DbProvider provider)
     {
-      await CreateTablesAsync(conn);
-      Console.WriteLine("✓ Database tables created");
+        await using var conn = await connections.OpenConnectionAsync();
+
+        var tablesExist = await TablesExistAsync(conn, provider);
+
+        if (!tablesExist)
+        {
+            await CreateTablesAsync(conn, provider);
+            Console.WriteLine("Database tables created");
+        }
+        else
+        {
+            Console.WriteLine("Database tables already exist");
+            await EnsureSchemaAsync(conn, provider);
+        }
     }
-    else
+
+    private static async Task<bool> TablesExistAsync(DbConnection conn, DbProvider provider)
     {
-      Console.WriteLine("✓ Database tables already exist");
-      // make sure new columns/tables introduced later are created
-      await EnsureSchemaAsync(conn);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = provider == DbProvider.Postgres
+            ? """
+                select exists (
+                  select 1 from information_schema.tables
+                  where table_schema = 'public'
+                  and table_name = 'games'
+                )
+              """
+            : "select exists(select 1 from sqlite_master where type = 'table' and name = 'games')";
+
+        var result = await cmd.ExecuteScalarAsync();
+        return result switch
+        {
+            bool b => b,
+            long l => l != 0,
+            int i => i != 0,
+            _ => result is not null && Convert.ToBoolean(result)
+        };
     }
-  }
 
-  private static async Task<bool> TablesExistAsync(NpgsqlConnection conn)
-  {
-    await using var cmd = conn.CreateCommand();
-    cmd.CommandText = """
-            select exists (
-              select 1 from information_schema.tables 
-              where table_schema = 'public' 
-              and table_name = 'games'
-            )
-        """;
+    private static async Task EnsureSchemaAsync(DbConnection conn, DbProvider provider)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = provider == DbProvider.Postgres ? PostgresEnsureSchemaSql : SqliteEnsureSchemaSql;
+        await cmd.ExecuteNonQueryAsync();
+    }
 
-    var result = await cmd.ExecuteScalarAsync();
-    return result is not null && (bool)result;
-  }
+    private static async Task CreateTablesAsync(DbConnection conn, DbProvider provider)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = provider == DbProvider.Postgres ? PostgresCreateTablesSql : SqliteCreateTablesSql;
+        await cmd.ExecuteNonQueryAsync();
+    }
 
-  private static async Task EnsureSchemaAsync(NpgsqlConnection conn)
-  {
-    // add any columns or tables that might have been introduced since creation
-    await using var cmd = conn.CreateCommand();
-    cmd.CommandText = """
-            alter table games
-              add column if not exists p1_accepts int not null default 5,
-              add column if not exists p1_disputes int not null default 5,
-              add column if not exists p2_accepts int not null default 5,
-              add column if not exists p2_disputes int not null default 5;
+    private const string PostgresEnsureSchemaSql = """
+        alter table games
+          add column if not exists p1_accepts int not null default 5,
+          add column if not exists p1_disputes int not null default 5,
+          add column if not exists p2_accepts int not null default 5,
+          add column if not exists p2_disputes int not null default 5;
 
-            create table if not exists word_history (
-              id uuid,
-              game_id uuid not null references games(id) on delete cascade,
-              word text not null,
-              claimer_id uuid not null,
-              p1_points int not null default 0,
-              p2_points int not null default 0,
-              is_valid boolean not null,
-              created_at timestamptz not null
-            );
+        create table if not exists word_history (
+          id uuid,
+          game_id uuid not null references games(id) on delete cascade,
+          word text not null,
+          claimer_id uuid not null,
+          p1_points int not null default 0,
+          p2_points int not null default 0,
+          is_valid boolean not null,
+          created_at timestamptz not null
+        );
 
-            alter table word_history
-              add column if not exists id uuid,
-              add column if not exists points_json jsonb not null default '[]'::jsonb;
+        alter table word_history
+          add column if not exists id uuid,
+          add column if not exists points_json jsonb not null default '[]'::jsonb;
 
-            create table if not exists game_players (
-              game_id uuid not null references games(id) on delete cascade,
-              player_id uuid not null,
-              player_name text not null default '',
-              turn_order int not null,
-              score int not null default 0,
-              accepts_left int not null default 5,
-              disputes_left int not null default 5,
-              joined_at timestamptz not null,
-              primary key (game_id, player_id),
-              unique (game_id, turn_order)
-            );
+        create table if not exists game_players (
+          game_id uuid not null references games(id) on delete cascade,
+          player_id uuid not null,
+          player_name text not null default '',
+          turn_order int not null,
+          score int not null default 0,
+          accepts_left int not null default 5,
+          disputes_left int not null default 5,
+          joined_at timestamptz not null,
+          primary key (game_id, player_id),
+          unique (game_id, turn_order)
+        );
 
-            alter table game_players
-              add column if not exists player_name text not null default '';
-        """;
-    await cmd.ExecuteNonQueryAsync();
-  }
+        alter table game_players
+          add column if not exists player_name text not null default '';
+    """;
 
-  private static async Task CreateTablesAsync(NpgsqlConnection conn)
-  {
-    await using var cmd = conn.CreateCommand();
-    cmd.CommandText = """
-            create table if not exists games (
-              id uuid primary key,
-              status text not null,
-              current_word text not null default '',
-              active_player_id uuid not null,
-              player1_id uuid not null,
-              player2_id uuid null,
-              pending_claimer_id uuid null,
-              pending_word text null,
-              created_at timestamptz not null,
-              updated_at timestamptz not null,
-              last_letter_player_id uuid null
-            );
+    private const string PostgresCreateTablesSql = """
+        create table if not exists games (
+          id uuid primary key,
+          status text not null,
+          current_word text not null default '',
+          active_player_id uuid not null,
+          player1_id uuid not null,
+          player2_id uuid null,
+          pending_claimer_id uuid null,
+          pending_word text null,
+          created_at timestamptz not null,
+          updated_at timestamptz not null,
+          last_letter_player_id uuid null
+        );
 
-            create table if not exists scores (
-              game_id uuid not null references games(id) on delete cascade,
-              player_id uuid not null,
-              score int not null default 0,
-              primary key (game_id, player_id)
-            );
+        create table if not exists scores (
+          game_id uuid not null references games(id) on delete cascade,
+          player_id uuid not null,
+          score int not null default 0,
+          primary key (game_id, player_id)
+        );
 
-            create table if not exists contributions (
-              game_id uuid not null references games(id) on delete cascade,
-              player_id uuid not null,
-              count int not null,
-              primary key (game_id, player_id)
-            );
+        create table if not exists contributions (
+          game_id uuid not null references games(id) on delete cascade,
+          player_id uuid not null,
+          count int not null,
+          primary key (game_id, player_id)
+        );
 
-            create table if not exists word_history (
-              id uuid,
-              game_id uuid not null references games(id) on delete cascade,
-              word text not null,
-              claimer_id uuid not null,
-              p1_points int not null default 0,
-              p2_points int not null default 0,
-              is_valid boolean not null,
-              created_at timestamptz not null
-            );
+        create table if not exists word_history (
+          id uuid,
+          game_id uuid not null references games(id) on delete cascade,
+          word text not null,
+          claimer_id uuid not null,
+          p1_points int not null default 0,
+          p2_points int not null default 0,
+          is_valid boolean not null,
+          created_at timestamptz not null
+        );
 
-            alter table word_history
-              add column if not exists points_json jsonb not null default '[]'::jsonb;
+        alter table word_history
+          add column if not exists points_json jsonb not null default '[]'::jsonb;
 
-            create table if not exists game_players (
-              game_id uuid not null references games(id) on delete cascade,
-              player_id uuid not null,
-              player_name text not null default '',
-              turn_order int not null,
-              score int not null default 0,
-              accepts_left int not null default 5,
-              disputes_left int not null default 5,
-              joined_at timestamptz not null,
-              primary key (game_id, player_id),
-              unique (game_id, turn_order)
-            );
+        create table if not exists game_players (
+          game_id uuid not null references games(id) on delete cascade,
+          player_id uuid not null,
+          player_name text not null default '',
+          turn_order int not null,
+          score int not null default 0,
+          accepts_left int not null default 5,
+          disputes_left int not null default 5,
+          joined_at timestamptz not null,
+          primary key (game_id, player_id),
+          unique (game_id, turn_order)
+        );
 
-            alter table game_players
-              add column if not exists player_name text not null default '';
+        alter table game_players
+          add column if not exists player_name text not null default '';
 
-            -- accept/dispute counters
-            alter table games
-              add column if not exists p1_accepts int not null default 5,
-              add column if not exists p1_disputes int not null default 5,
-              add column if not exists p2_accepts int not null default 5,
-              add column if not exists p2_disputes int not null default 5;
+        alter table games
+          add column if not exists p1_accepts int not null default 5,
+          add column if not exists p1_disputes int not null default 5,
+          add column if not exists p2_accepts int not null default 5,
+          add column if not exists p2_disputes int not null default 5;
 
-            create index if not exists idx_games_updated_at on games(updated_at desc);
-        """;
+        create index if not exists idx_games_updated_at on games(updated_at desc);
+    """;
 
-    await cmd.ExecuteNonQueryAsync();
-  }
+    private const string SqliteEnsureSchemaSql = """
+        create table if not exists games (
+          id text primary key,
+          status text not null,
+          current_word text not null default '',
+          active_player_id text not null,
+          player1_id text not null,
+          player2_id text null,
+          pending_claimer_id text null,
+          pending_word text null,
+          created_at text not null default CURRENT_TIMESTAMP,
+          updated_at text not null default CURRENT_TIMESTAMP,
+          last_letter_player_id text null,
+          p1_accepts integer not null default 5,
+          p1_disputes integer not null default 5,
+          p2_accepts integer not null default 5,
+          p2_disputes integer not null default 5
+        );
+
+        create table if not exists scores (
+          game_id text not null references games(id) on delete cascade,
+          player_id text not null,
+          score integer not null default 0,
+          primary key (game_id, player_id)
+        );
+
+        create table if not exists contributions (
+          game_id text not null references games(id) on delete cascade,
+          player_id text not null,
+          count integer not null,
+          primary key (game_id, player_id)
+        );
+
+        create table if not exists word_history (
+          id text primary key,
+          game_id text not null references games(id) on delete cascade,
+          word text not null,
+          claimer_id text not null,
+          p1_points integer not null default 0,
+          p2_points integer not null default 0,
+          is_valid integer not null,
+          created_at text not null default CURRENT_TIMESTAMP,
+          points_json text not null default '[]'
+        );
+
+        create table if not exists game_players (
+          game_id text not null references games(id) on delete cascade,
+          player_id text not null,
+          player_name text not null default '',
+          turn_order integer not null,
+          score integer not null default 0,
+          accepts_left integer not null default 5,
+          disputes_left integer not null default 5,
+          joined_at text not null default CURRENT_TIMESTAMP,
+          primary key (game_id, player_id),
+          unique (game_id, turn_order)
+        );
+
+        create index if not exists idx_games_updated_at on games(updated_at desc);
+    """;
+
+    private const string SqliteCreateTablesSql = SqliteEnsureSchemaSql;
 }

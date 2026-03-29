@@ -60,6 +60,46 @@ The app reads connection string from:
 
 launchSettings.json includes local defaults, but DATABASE_URL can override.
 
+### 3) Provider Switching (Postgres or SQLite)
+
+You can switch provider via either environment variables or config.
+
+Resolution order:
+
+1. ConnectionStrings:Default
+2. DATABASE_URL
+3. DB_PROVIDER + SQLITE_PATH (SQLite mode)
+
+If nothing is set, the default fallback provider is SQLite.
+
+Recommended usage:
+
+- Local development: environment variables
+- Shared/stable setup: config file (ConnectionStrings:Default)
+- CI/deploy: environment variables
+
+Use SQLite via env:
+
+```bash
+export DB_PROVIDER=sqlite
+export SQLITE_PATH=every_second_letter.db
+dotnet run
+```
+
+Use Postgres via env:
+
+```bash
+export DB_PROVIDER=postgres
+export DATABASE_URL=postgres://user:pass@host:5432/db
+dotnet run
+```
+
+Use config file:
+
+- Set ConnectionStrings:Default to either:
+  - Postgres connection string, or
+  - SQLite connection string, for example: Data Source=every_second_letter.db
+
 ## Run Modes
 
 ### Development (recommended)

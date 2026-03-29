@@ -5,7 +5,8 @@
       "applicationUrl": "http://localhost:5010",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DATABASE_URL": "postgres://postgres:postgres@localhost:5432/every_second_letter"
+        "DB_PROVIDER": "sqlite",
+        "SQLITE_PATH": "every_second_letter.db"
       }
     }
   }

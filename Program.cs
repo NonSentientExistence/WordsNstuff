@@ -1,21 +1,16 @@
 using System.Text.Json.Serialization;
-using Npgsql;
 using EverySecondLetter.Services;
+using EverySecondLetter.Services.Database;
 using EverySecondLetter.Gameplay.EverySecondLetter;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Config ----
-// Prefer "ConnectionStrings:Default" but accept DATABASE_URL for convenience.
-var connStr = builder.Configuration.GetConnectionString("Default");
-if (string.IsNullOrWhiteSpace(connStr))
-{
-    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-    if (!string.IsNullOrWhiteSpace(databaseUrl))
-        connStr = Db.FromDatabaseUrl(databaseUrl);
-}
-if (string.IsNullOrWhiteSpace(connStr))
-    throw new InvalidOperationException("Missing Postgres connection string. Set ConnectionStrings:Default or DATABASE_URL.");
+var dbSettings = Db.ResolveDatabaseSettings(
+    builder.Configuration.GetConnectionString("Default"),
+    Environment.GetEnvironmentVariable("DATABASE_URL"),
+    Environment.GetEnvironmentVariable("DB_PROVIDER"),
+    Environment.GetEnvironmentVariable("SQLITE_PATH"));
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
@@ -25,7 +20,17 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton(new NpgsqlDataSourceBuilder(connStr).Build());
+builder.Services.AddSingleton(dbSettings);
+if (dbSettings.Provider == DbProvider.Sqlite)
+{
+    builder.Services.AddSingleton<IDbConnectionFactory>(_ => new SqliteConnectionFactory(dbSettings.ConnectionString));
+    builder.Services.AddSingleton<ISqlDialect, SqliteSqlDialect>();
+}
+else
+{
+    builder.Services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(dbSettings.ConnectionString));
+    builder.Services.AddSingleton<ISqlDialect, PostgresSqlDialect>();
+}
 builder.Services.AddSingleton<WordsService>();
 builder.Services.AddSingleton<EverySecondLetterGameDefinition>();
 builder.Services.AddSingleton<GamesService>();
@@ -33,8 +38,9 @@ builder.Services.AddSingleton<GamesService>();
 var app = builder.Build();
 
 // ---- Initialize database ----
-var ds = app.Services.GetRequiredService<NpgsqlDataSource>();
-await SeedDb.InitializeAsync(ds);
+await SeedDb.InitializeAsync(
+    app.Services.GetRequiredService<IDbConnectionFactory>(),
+    dbSettings.Provider);
 
 app.UseDeveloperExceptionPage();
 app.UseSwagger();
