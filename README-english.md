@@ -5,7 +5,7 @@ Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vi
 ## What This Repo Contains
 
 - Backend API in C# (.NET 8) with SQL persistence.
-- React frontend in frontend/, built into wwwroot/ for production serving.
+- React frontend in frontend/, built into Server/wwwroot/ for production serving.
 - Gameplay logic for turn-based letter play, claim/dispute scoring, and automatic endgame.
 - System tests using Postman/Newman (API) and Playwright + playwright-bdd (UI).
 
@@ -26,30 +26,28 @@ Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vi
 
 ```text
 .
-├── Program.cs
-├── Services/
-├── Gameplay/
-├── sql/
-├── wordlists/
+├── Server/
+│   ├── Program.cs
+│   ├── Services/
+│   ├── Gameplay/
+│   ├── wordlists/
+│   └── wwwroot/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── context/
 │   │   └── pages/
 │   └── README.md
-├── Testing/SystemTests/
-└── wwwroot/
+└── Testing/SystemTests/
 ```
 
 ## Setup
 
 ### 1) Database
 
-Create a PostgreSQL database (for example every_second_letter) and apply:
+Create a PostgreSQL database (for example every_second_letter).
 
-```bash
-psql "<YOUR CONNECTION STRING>" -f sql/001_init.sql
-```
+The application initializes and updates required tables automatically on startup.
 
 ### 2) Connection String
 
@@ -83,7 +81,7 @@ Use SQLite via env:
 ```bash
 export DB_PROVIDER=sqlite
 export SQLITE_PATH=every_second_letter.db
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Use Postgres via env:
@@ -91,7 +89,7 @@ Use Postgres via env:
 ```bash
 export DB_PROVIDER=postgres
 export DATABASE_URL=postgres://user:pass@host:5432/db
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Use config file:
@@ -115,7 +113,7 @@ npm run dev
 Terminal 2:
 
 ```bash
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Open http://localhost:5173. Vite proxies /games calls to http://localhost:5010.
@@ -127,14 +125,14 @@ cd frontend
 npm install
 npm run build
 cd ..
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Open http://localhost:5010.
 
 ## Frontend Notes (Consolidated)
 
-- Frontend is React + Vite and builds to wwwroot/.
+- Frontend is React + Vite and builds to Server/wwwroot/.
 - SPA fallback middleware in Program.cs rewrites non-API, non-file routes to /index.html.
 - Main pages:
   - RegisterPage
@@ -179,6 +177,8 @@ Tests live in Testing/SystemTests and are split by project:
 - api
 - ui
 
+Unit tests live in Testing/UnitTests and run with xUnit.
+
 Commands:
 
 ```bash
@@ -188,6 +188,7 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
+dotnet test
 ```
 
 Notes:
@@ -199,7 +200,7 @@ Notes:
 ## Troubleshooting
 
 - 404 on deep link refresh:
-  - Verify frontend build exists in wwwroot and SPA fallback is enabled.
+  - Verify frontend build exists in Server/wwwroot and SPA fallback is enabled.
 - UI tests cannot connect:
   - Ensure backend is running on http://localhost:5010.
 - Rejoin behavior not restoring state:

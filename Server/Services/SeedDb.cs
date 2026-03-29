@@ -6,61 +6,61 @@ namespace EverySecondLetter.Services;
 public static class SeedDb
 {
   public static async Task InitializeAsync(IDbConnectionFactory connections, DbProvider provider)
+  {
+    await using var conn = await connections.OpenConnectionAsync();
+
+    var tablesExist = await TablesExistAsync(conn, provider);
+
+    if (!tablesExist)
     {
-        await using var conn = await connections.OpenConnectionAsync();
-
-        var tablesExist = await TablesExistAsync(conn, provider);
-
-        if (!tablesExist)
-        {
-            await CreateTablesAsync(conn, provider);
-            Console.WriteLine("Database tables created");
-        }
-        else
-        {
-            Console.WriteLine("Database tables already exist");
-            await EnsureSchemaAsync(conn, provider);
-        }
+      await CreateTablesAsync(conn, provider);
+      Console.WriteLine("Database tables created");
     }
-
-    private static async Task<bool> TablesExistAsync(DbConnection conn, DbProvider provider)
+    else
     {
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = provider == DbProvider.Postgres
-            ? """
+      Console.WriteLine("Database tables already exist");
+      await EnsureSchemaAsync(conn, provider);
+    }
+  }
+
+  private static async Task<bool> TablesExistAsync(DbConnection conn, DbProvider provider)
+  {
+    await using var cmd = conn.CreateCommand();
+    cmd.CommandText = provider == DbProvider.Postgres
+        ? """
                 select exists (
                   select 1 from information_schema.tables
                   where table_schema = 'public'
                   and table_name = 'games'
                 )
               """
-            : "select exists(select 1 from sqlite_master where type = 'table' and name = 'games')";
+        : "select exists(select 1 from sqlite_master where type = 'table' and name = 'games')";
 
-        var result = await cmd.ExecuteScalarAsync();
-        return result switch
-        {
-            bool b => b,
-            long l => l != 0,
-            int i => i != 0,
-            _ => result is not null && Convert.ToBoolean(result)
-        };
-    }
-
-    private static async Task EnsureSchemaAsync(DbConnection conn, DbProvider provider)
+    var result = await cmd.ExecuteScalarAsync();
+    return result switch
     {
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = provider == DbProvider.Postgres ? PostgresEnsureSchemaSql : SqliteEnsureSchemaSql;
-        await cmd.ExecuteNonQueryAsync();
-    }
+      bool b => b,
+      long l => l != 0,
+      int i => i != 0,
+      _ => result is not null && Convert.ToBoolean(result)
+    };
+  }
 
-    private static async Task CreateTablesAsync(DbConnection conn, DbProvider provider)
-    {
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = provider == DbProvider.Postgres ? PostgresCreateTablesSql : SqliteCreateTablesSql;
-        await cmd.ExecuteNonQueryAsync();
-    }
+  private static async Task EnsureSchemaAsync(DbConnection conn, DbProvider provider)
+  {
+    await using var cmd = conn.CreateCommand();
+    cmd.CommandText = provider == DbProvider.Postgres ? PostgresEnsureSchemaSql : SqliteEnsureSchemaSql;
+    await cmd.ExecuteNonQueryAsync();
+  }
 
-    private const string PostgresEnsureSchemaSql = """
+  private static async Task CreateTablesAsync(DbConnection conn, DbProvider provider)
+  {
+    await using var cmd = conn.CreateCommand();
+    cmd.CommandText = provider == DbProvider.Postgres ? PostgresCreateTablesSql : SqliteCreateTablesSql;
+    await cmd.ExecuteNonQueryAsync();
+  }
+
+  private const string PostgresEnsureSchemaSql = """
         alter table games
           add column if not exists p1_accepts int not null default 5,
           add column if not exists p1_disputes int not null default 5,
@@ -99,7 +99,7 @@ public static class SeedDb
           add column if not exists player_name text not null default '';
     """;
 
-    private const string PostgresCreateTablesSql = """
+  private const string PostgresCreateTablesSql = """
         create table if not exists games (
           id uuid primary key,
           status text not null,
@@ -167,7 +167,7 @@ public static class SeedDb
         create index if not exists idx_games_updated_at on games(updated_at desc);
     """;
 
-    private const string SqliteEnsureSchemaSql = """
+  private const string SqliteEnsureSchemaSql = """
         create table if not exists games (
           id text primary key,
           status text not null,
@@ -228,5 +228,5 @@ public static class SeedDb
         create index if not exists idx_games_updated_at on games(updated_at desc);
     """;
 
-    private const string SqliteCreateTablesSql = SqliteEnsureSchemaSql;
+  private const string SqliteCreateTablesSql = SqliteEnsureSchemaSql;
 }

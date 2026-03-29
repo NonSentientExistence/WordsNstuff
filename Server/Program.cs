@@ -33,6 +33,9 @@ else
 }
 builder.Services.AddSingleton<WordsService>();
 builder.Services.AddSingleton<EverySecondLetterGameDefinition>();
+builder.Services.AddSingleton<JoinGameEngine>();
+builder.Services.AddSingleton<PlayLetterEngine>();
+builder.Services.AddSingleton<ClaimResolutionEngine>();
 builder.Services.AddSingleton<GamesService>();
 
 var app = builder.Build();
@@ -68,13 +71,13 @@ app.Use(async (ctx, next) =>
 {
     var path = ctx.Request.Path.Value ?? "/";
     var ext = Path.GetExtension(path);
-    
+
     // Skip API routes, routes with file extensions
     if (!path.StartsWith("/games") && string.IsNullOrEmpty(ext) && path != "/" && path != "/index.html")
     {
         ctx.Request.Path = "/index.html";
     }
-    
+
     await next();
 });
 

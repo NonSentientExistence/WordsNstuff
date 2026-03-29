@@ -11,4 +11,4 @@ cd ..
 echo "Building .NET backend..."
 dotnet build
 
-echo "Build complete! Run 'dotnet run' to start the server."
+echo "Build complete! Run 'dotnet run --project Server/EverySecondLetter.csproj' to start the server."

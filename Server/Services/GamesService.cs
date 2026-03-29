@@ -11,6 +11,9 @@ public sealed class GamesService
     private readonly ISqlDialect _dialect;
     private readonly WordsService _words;
     private readonly EverySecondLetterGameDefinition _definition;
+    private readonly JoinGameEngine _joinGame;
+    private readonly PlayLetterEngine _playLetter;
+    private readonly ClaimResolutionEngine _claimResolution;
 
     private sealed record GameRow(
         Guid GameId,
@@ -33,12 +36,15 @@ public sealed class GamesService
         string PointsJson
     );
 
-    public GamesService(IDbConnectionFactory connections, ISqlDialect dialect, WordsService words, EverySecondLetterGameDefinition definition)
+    public GamesService(IDbConnectionFactory connections, ISqlDialect dialect, WordsService words, EverySecondLetterGameDefinition definition, JoinGameEngine joinGame, PlayLetterEngine playLetter, ClaimResolutionEngine claimResolution)
     {
         _connections = connections;
         _dialect = dialect;
         _words = words;
         _definition = definition;
+        _joinGame = joinGame;
+        _playLetter = playLetter;
+        _claimResolution = claimResolution;
     }
 
     public async Task<CreateGameResponse> CreateGameAsync(string? playerName)
@@ -101,26 +107,20 @@ public sealed class GamesService
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
 
-            if (existingPlayerToken.HasValue && players.Any(player => player.PlayerId == existingPlayerToken.Value))
+            var plan = _joinGame.CreatePlan(game.Status, players, playerId, existingPlayerToken);
+
+            if (plan.IsRejoin)
             {
                 await tx.CommitAsync();
-                return new JoinGameResponse(gameId, existingPlayerToken.Value);
+                return new JoinGameResponse(gameId, plan.ResultPlayerId);
             }
 
-            if (!_definition.CanJoin(game.Status, players.Count))
-                throw new ApiException(409, "Game is not joinable.");
-
-            var nextTurnOrder = players.Count;
-
-            await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, nextTurnOrder);
+            await InsertPlayerAsync(conn, tx, gameId, playerId, normalizedPlayerName, plan.TurnOrder ?? players.Count);
             await InsertLegacyScoreAsync(conn, tx, gameId, playerId);
-
-            var joinedPlayerCount = players.Count + 1;
-            var shouldStart = _definition.ShouldStart(joinedPlayerCount);
 
             var update = conn.CreateCommand();
             update.Transaction = tx;
-            update.CommandText = shouldStart
+            update.CommandText = plan.ShouldStart
                 ? $"""
                     update games
                     set status=@status,
@@ -137,10 +137,10 @@ public sealed class GamesService
                 """;
             AddParam(update, "id", gameId);
             AddParam(update, "joinedPlayer", playerId);
-            if (shouldStart)
+            if (plan.ShouldStart)
             {
                 AddParam(update, "status", GameStatus.InProgress.ToString());
-                AddParam(update, "active", players[0].PlayerId);
+                AddParam(update, "active", plan.ActivePlayerId);
             }
             await update.ExecuteNonQueryAsync();
 
@@ -178,8 +178,6 @@ public sealed class GamesService
 
     public async Task<GameStateDto> PlayLetterAsync(Guid gameId, Guid playerToken, string letter)
     {
-        var normalized = _definition.NormalizeLetter(letter);
-
         await using var conn = await _connections.OpenConnectionAsync();
         await using var tx = await conn.BeginTransactionAsync();
 
@@ -188,14 +186,7 @@ public sealed class GamesService
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
 
-            EnsurePlayerInGame(players, playerToken);
-
-            if (game.Status != GameStatus.InProgress)
-                throw new ApiException(409, "Game is not in progress.");
-            if (game.ActivePlayerId != playerToken)
-                throw new ApiException(409, "Not your turn.");
-
-            var nextPlayerId = _definition.GetNextPlayerId(players, playerToken);
+            var plan = _playLetter.CreatePlan(game.Status, game.CurrentWord, game.ActivePlayerId, players, playerToken, letter);
 
             var contrib = conn.CreateCommand();
             contrib.Transaction = tx;
@@ -219,9 +210,9 @@ public sealed class GamesService
                     updated_at={_dialect.NowExpression}
                 where id=@id
             """;
-            AddParam(update, "word", game.CurrentWord + normalized);
-            AddParam(update, "next", nextPlayerId);
-            AddParam(update, "last", playerToken);
+            AddParam(update, "word", plan.UpdatedWord);
+            AddParam(update, "next", plan.NextActivePlayerId);
+            AddParam(update, "last", plan.LastLetterPlayerId);
             AddParam(update, "id", gameId);
             await update.ExecuteNonQueryAsync();
 
@@ -299,54 +290,34 @@ public sealed class GamesService
         {
             var game = await ReadGameForUpdateAsync(conn, tx, gameId);
             var players = await ReadPlayersForUpdateAsync(conn, tx, gameId);
+            var pendingWord = game.PendingWord ?? throw new ApiException(409, "No pending claim.");
 
-            if (game.Status != GameStatus.PendingDispute || game.PendingClaimerId is null || string.IsNullOrWhiteSpace(game.PendingWord))
-                throw new ApiException(409, "No pending claim.");
+            var contributionCount = await GetContributionCountAsync(conn, tx, gameId, game.PendingClaimerId ?? Guid.Empty);
+            var isValidWord = _words.IsValid(pendingWord);
 
-            EnsurePlayerInGame(players, playerToken);
+            var plan = _claimResolution.CreatePlan(
+                game.Status,
+                game.PendingClaimerId,
+                pendingWord,
+                game.ActivePlayerId,
+                players,
+                playerToken,
+                disputed,
+                contributionCount,
+                isValidWord);
 
-            var claimerId = game.PendingClaimerId.Value;
-            var responderId = game.ActivePlayerId ?? throw new ApiException(409, "Game has no active responder.");
-            if (playerToken != responderId)
-                throw new ApiException(409, "Only the active player may accept/dispute.");
-
-            var responder = FindPlayer(players, responderId);
-            var availableResponses = disputed ? responder.DisputesRemaining : responder.AcceptsRemaining;
-            if (availableResponses <= 0)
-                throw new ApiException(409, "No remaining accepts/disputes available.");
-
-            var baseScore = _definition.GetBaseScore(await GetContributionCountAsync(conn, tx, gameId, claimerId));
-            var isValidWord = _words.IsValid(game.PendingWord);
-
-            var pointEntries = new List<PlayerPoints>();
-            if (!disputed)
-            {
-                pointEntries.Add(new PlayerPoints(claimerId, _definition.GetAcceptedScore(baseScore)));
-            }
-            else if (isValidWord)
-            {
-                pointEntries.Add(new PlayerPoints(claimerId, _definition.GetValidDisputedScore(baseScore)));
-            }
-            else
-            {
-                pointEntries.Add(new PlayerPoints(responderId, _definition.GetInvalidDisputedScore(baseScore)));
-            }
-
-            foreach (var points in pointEntries.Where(x => x.Points != 0))
+            foreach (var points in plan.PointEntries.Where(x => x.Points != 0))
             {
                 await AddScoreAsync(conn, tx, gameId, points.PlayerId, points.Points);
                 await AddLegacyScoreAsync(conn, tx, gameId, points.PlayerId, points.Points);
             }
 
-            await ConsumeResponseAsync(conn, tx, gameId, responderId, disputed, players);
-            await InsertWordHistoryAsync(conn, tx, game, pointEntries, isValidWord, players);
-
-            var refreshedPlayers = await ReadPlayersForUpdateAsync(conn, tx, gameId);
-            var gameOver = refreshedPlayers.All(player => player.AcceptsRemaining + player.DisputesRemaining == 0);
+            await ConsumeResponseAsync(conn, tx, gameId, plan.ResponderId, disputed, players);
+            await InsertWordHistoryAsync(conn, tx, game, plan.PointEntries, isValidWord, players);
 
             var reset = conn.CreateCommand();
             reset.Transaction = tx;
-            reset.CommandText = gameOver
+            reset.CommandText = plan.GameOver
                 ? $"""
                     delete from contributions where game_id=@gid;
                     update games
@@ -369,9 +340,9 @@ public sealed class GamesService
                     where id=@gid
                 """;
             AddParam(reset, "gid", gameId);
-            AddParam(reset, "status", (gameOver ? GameStatus.Finished : GameStatus.InProgress).ToString());
-            if (!gameOver)
-                AddParam(reset, "active", responderId);
+            AddParam(reset, "status", (plan.GameOver ? GameStatus.Finished : GameStatus.InProgress).ToString());
+            if (!plan.GameOver)
+                AddParam(reset, "active", plan.NextActivePlayerId);
             await reset.ExecuteNonQueryAsync();
 
             await tx.CommitAsync();

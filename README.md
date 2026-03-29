@@ -5,7 +5,7 @@ Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, Post
 ## Vad Repon Innehaller
 
 - Backend-API i C# (.NET 8) med SQL-lagring.
-- React-frontend i frontend/, byggs till wwwroot/ for produktion.
+- React-frontend i frontend/, byggs till Server/wwwroot/ for produktion.
 - Spelregler for bokstavsspel, claim/dispute-poang och automatiskt slutspel.
 - Systemtester med Postman/Newman (API) och Playwright + playwright-bdd (UI).
 
@@ -26,30 +26,28 @@ Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, Post
 
 ```text
 .
-├── Program.cs
-├── Services/
-├── Gameplay/
-├── sql/
-├── wordlists/
+├── Server/
+│   ├── Program.cs
+│   ├── Services/
+│   ├── Gameplay/
+│   ├── wordlists/
+│   └── wwwroot/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── context/
 │   │   └── pages/
 │   └── README.md
-├── Testing/SystemTests/
-└── wwwroot/
+└── Testing/SystemTests/
 ```
 
 ## Installation
 
 ### 1) Databas
 
-Skapa en PostgreSQL-databas (till exempel every_second_letter) och kor:
+Skapa en PostgreSQL-databas (till exempel every_second_letter).
 
-```bash
-psql "<YOUR CONNECTION STRING>" -f sql/001_init.sql
-```
+Applikationen initierar och uppdaterar nodvandiga tabeller automatiskt vid uppstart.
 
 ### 2) Anslutningsstrang
 
@@ -83,7 +81,7 @@ Anvand SQLite via env:
 ```bash
 export DB_PROVIDER=sqlite
 export SQLITE_PATH=every_second_letter.db
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Anvand Postgres via env:
@@ -91,7 +89,7 @@ Anvand Postgres via env:
 ```bash
 export DB_PROVIDER=postgres
 export DATABASE_URL=postgres://user:pass@host:5432/db
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Anvand configfil:
@@ -115,7 +113,7 @@ npm run dev
 Terminal 2:
 
 ```bash
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Oppna http://localhost:5173. Vite proxar /games till http://localhost:5010.
@@ -127,14 +125,14 @@ cd frontend
 npm install
 npm run build
 cd ..
-dotnet run
+dotnet run --project Server/EverySecondLetter.csproj
 ```
 
 Oppna http://localhost:5010.
 
 ## Frontend Sammanfattning
 
-- Frontend ar byggt med React + Vite och byggs till wwwroot/.
+- Frontend ar byggt med React + Vite och byggs till Server/wwwroot/.
 - SPA-fallback i Program.cs skriver om icke-API och icke-filrutter till /index.html.
 - Huvudsidor:
   - RegisterPage
@@ -179,6 +177,8 @@ Testerna finns i Testing/SystemTests och ar uppdelade i:
 - api
 - ui
 
+Enhetstester finns i Testing/UnitTests och kor med xUnit.
+
 Kommandon:
 
 ```bash
@@ -188,6 +188,7 @@ npm run test
 npm run test:api
 npm run test:ui
 npm run test:headed
+dotnet test
 ```
 
 Noteringar:
@@ -199,7 +200,7 @@ Noteringar:
 ## Felsokning
 
 - 404 vid uppdatering av djup lanka:
-  - Kontrollera att frontend-build finns i wwwroot och att SPA-fallback ar aktiv.
+  - Kontrollera att frontend-build finns i Server/wwwroot och att SPA-fallback ar aktiv.
 - UI-tester kan inte ansluta:
   - Kontrollera att backend kor pa http://localhost:5010.
 - Rejoin aterstaller inte spel:
