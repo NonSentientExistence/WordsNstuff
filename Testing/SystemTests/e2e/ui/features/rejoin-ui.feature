@@ -6,7 +6,7 @@ Feature: Rejoin scenarios in UI
     Then återställs spelet automatiskt till samma state
     And spelers stats förblir oförändrade
 
-  Scenario: Rejoin from saved localStorage data
+  Scenario: Rejoin from saved sessionStorage credentials
     Given ett spel med två aktiva spelare
     When spelare 2 öppnar appen i nytt fönster med sparade credentials
     Then visar gränssnittet spelet i samma status

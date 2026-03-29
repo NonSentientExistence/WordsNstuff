@@ -1,341 +1,207 @@
-# EverySecondLetter (Minimal API + SQL)
+# EverySecondLetter
+
+Two-player word game built with .NET 8 Minimal API, PostgreSQL, and a React + Vite frontend.
+
+## What This Repo Contains
+
+- Backend API in C# (.NET 8) with SQL persistence.
+- React frontend in frontend/, built into wwwroot/ for production serving.
+- Gameplay logic for turn-based letter play, claim/dispute scoring, and automatic endgame.
+- System tests (API + UI BDD) using Playwright + playwright-bdd.
+
+## Tech Stack
+
+- Backend: .NET 8 Minimal API, Npgsql, PostgreSQL
+- Frontend: React 18, Vite, React Context
+- Testing: Playwright, playwright-bdd
 
 ## Requirements
 
-* .NET 8 SDK
-* PostgreSQL
-* `psql` (optional)
+- .NET 8 SDK
+- Node.js 18+
+- PostgreSQL
+- psql (optional but useful)
 
+## Project Structure
 
-## Setup Database
+```text
+.
+├── Program.cs
+├── Services/
+├── Gameplay/
+├── sql/
+├── wordlists/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   └── pages/
+│   └── README.md
+├── Testing/SystemTests/
+└── wwwroot/
+```
 
-1. Create a database (e.g. `every_second_letter`)
-2. Apply the SQL in sql/001_init.sql in your editor, or run in your command line if you have psql installed:
+## Setup
+
+### 1) Database
+
+Create a PostgreSQL database (for example every_second_letter) and apply:
 
 ```bash
 psql "<YOUR CONNECTION STRING>" -f sql/001_init.sql
 ```
 
+### 2) Connection String
 
-## Configure Connection String
+The app reads connection string from:
 
-Default is set in `launchSettings.json`.
+1. ConnectionStrings:Default
+2. DATABASE_URL (fallback)
 
-To override, set environment variable `DATABASE_URL`. Documentation: https://configu.com/blog/setting-env-variables-in-windows-linux-macos-beginners-guide/
+launchSettings.json includes local defaults, but DATABASE_URL can override.
 
+## Run Modes
 
-## Run
+### Development (recommended)
+
+Terminal 1:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Terminal 2:
 
 ```bash
 dotnet run
 ```
 
-Open the URL shown in the console
-(default: [http://localhost:5010](http://localhost:5010))
+Open http://localhost:5173. Vite proxies /games calls to http://localhost:5010.
 
+### Production-like Local Run
 
-## Notes
-
-* Dictionary is small and in-memory (`WordsService` using `wordlists/enable1.txt`)
-* Raw SQL in `GamesService` (no EF / repositories)
-* Minimal API routes in `Program.cs`
-
----
-
-# Gameplay & Rules
-
-## Overview
-
-EverySecondLetter is a two-player, turn-based word game.
-
-Players collaboratively build a word by placing one letter at a time.
-At any point (after placing a letter), a player may **claim** the current word to score points — but the opponent may **dispute** the claim.
-
-The game introduces a risk-reward mechanic through the Claim / Dispute system.
-
-
-
-## Game Flow
-
-### Create / Join
-
-* Player 1 creates a game.
-* Player 2 joins using the Game ID.
-* The game starts automatically when two players are present.
-
-
-
-### Playing Letters
-
-* Players take turns.
-* On your turn, you may:
-
-    * Place **exactly one letter (A–Z)**.
-* The letter is appended to the current word.
-* The turn then passes to the other player.
-
-Example:
-
-| Turn | Player | Word |
-| ---- | ------ | ---- |
-| 1    | A      | H    |
-| 2    | B      | HE   |
-| 3    | A      | HEL  |
-| 4    | B      | HELL |
-
-
-
-### Claiming a Word
-
-A player may click **Claim Word**:
-
-* On their turn
-  **or**
-* Immediately after placing their most recent letter
-
-Minimum word length: **3 letters**
-
-When a word is claimed:
-
-* The game enters `PendingDispute` state
-* No further letters can be placed
-* The opponent must choose to:
-
-    * **Accept**
-    * **Dispute**
-
-
-
-## Claim / Dispute Rules
-
-### If the opponent Accepts
-
-The claimer receives:
-
-```
-baseScore = (number of letters the claimer placed in this word)²
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+dotnet run
 ```
 
-Example:
+Open http://localhost:5010.
 
-* Word = HELLO
-* Player A placed H, L, O → 3 letters
-* Score = 3² = 9 points
+## Frontend Notes (Consolidated)
 
+- Frontend is React + Vite and builds to wwwroot/.
+- SPA fallback middleware in Program.cs rewrites non-API, non-file routes to /index.html.
+- Main pages:
+  - RegisterPage
+  - CreateGamePage
+  - JoinGamePage
+  - GamePage
+- Core UI components:
+  - WordDisplay
+  - ScoreBoard
+  - GameControls
+- State is managed in GameContext via useGame().
+- Persistence is sessionStorage-first, with localStorage fallback for legacy data migration.
+- Game polling currently runs every 1000ms on GamePage.
 
+## Gameplay Rules
 
-### If the opponent Disputes
+### Core Flow
 
-The word is validated against the dictionary.
+1. Player 1 creates a game.
+2. Player 2 joins with Game ID.
+3. Players alternate placing one letter (A-Z).
+4. A player can claim once the word has at least 3 letters and they placed the last letter.
+5. Opponent responds with Accept or Dispute.
 
-#### Case 1 — Word is valid
+### Scoring
 
-* Claimer receives **150%** of base score
-* Opponent receives 0
+Base score is:
 
-```
-finalScore = floor(baseScore × 1.5)
-```
+baseScore = (number of letters the claimer placed in this word)^2
 
-This rewards confident claims.
+If opponent accepts:
 
+- Claimer gets 100% of baseScore.
 
+If opponent disputes and word is valid:
 
-#### Case 2 — Word is invalid
+- Claimer gets floor(baseScore * 1.5).
 
-* Claimer receives 0
-* Opponent receives **50%** of base score
+If opponent disputes and word is invalid:
 
-```
-opponentScore = floor(baseScore × 0.5)
-```
+- Opponent gets floor(baseScore * 0.5).
 
-This punishes risky or fake claims.
+### Action Limits and Endgame
 
-## Action Limits & Endgame
+- Each player starts with 5 Accept and 5 Dispute actions.
+- Each claim response consumes one corresponding action.
+- Game finishes automatically when both players have exhausted all 10 responses.
+- Highest score wins; ties are possible.
 
-Each player begins the match with **5 accepts** and **5 disputes**.  Whenever
-the opponent is asked to respond to a claim, using Accept or Dispute consumes one
-of the remaining actions.  The countdown is shown directly in the UI buttons.
+### Dictionary
 
-When **both players** have used up all ten actions the game automatically ends.
-The winner is the player with the higher score; ties are possible.  The status
-bar and standing display make the outcome obvious: the finished state is shown
-along with the winning side.
+- ENABLE word list (wordlists/enable1.txt)
+- Case-insensitive validation
+- Minimum valid length: 3
 
+## API Overview
 
+- POST /games
+- POST /games/{id}/join
+- GET /games/{id}
+- POST /games/{id}/letter
+- POST /games/{id}/claim
+- POST /games/{id}/accept
+- POST /games/{id}/dispute
 
+Authenticated player actions use X-Player-Token.
 
-## After Resolution
+## Testing
 
-After Accept or Dispute:
+Tests live in Testing/SystemTests and are split by project:
 
-* The current word resets to empty
-* Letter contributions reset
-* The turn goes to the opponent of the claimer
-* The game continues
+- api
+- ui
 
+Commands:
 
-
-## Dictionary
-
-* Words are validated using the ENABLE word list
-* Word validation is case-insensitive
-* Only words with **3 or more letters** are allowed
-
-
-
-## Strategy
-
-The game balances cooperation and competition:
-
-* Build a strong word together…
-* Or sabotage subtly.
-* Claim early for safety…
-* Or risk a dispute for bonus points.
-
----
-
-# Test Strategy
-
-This project uses three layers:
-
-1. **Unit tests** – rule logic and scoring
-2. **API tests** – HTTP contract and state transitions
-3. **E2E (BDD)** – full browser gameplay validation
-
-Goal: fast rule confidence → stable API → verified user behavior.
-
-
-
-## 1) Unit Tests
-
-### Scope
-
-Test pure game rules without:
-
-* HTTP
-* Database
-* Browser
-
-Extract rule logic into a small testable core (e.g. `GameRules`).
-
-### Must cover
-
-**Turn rules**
-
-* Wrong player cannot act
-* Claim requires ≥3 letters
-* Claim allowed immediately after placing last letter
-
-**Scoring**
-
-* Base = (letters placed)²
-* Accept → 100%
-* Dispute valid → floor(150%)
-* Dispute invalid → opponent gets floor(50%)
-
-**State transitions**
-
-* InProgress → PendingDispute → InProgress
-* Word + contributions reset after resolution
-
-
-
-## 2) API Tests
-
-### Scope
-
-Validate:
-
-* Routes
-* Status codes
-* DTO shape
-* `X-Player-Token` auth
-* State transitions
-
-Use:
-
-* `WebApplicationFactory<Program>`
-* Dedicated test Postgres DB
-* Apply schema on startup
-
-### Core scenarios
-
-* Create → Join → Get game
-* Play letter (success + wrong turn)
-* Claim → Accept
-* Claim → Dispute (valid/invalid)
-* 401 for missing/invalid token
-* 409 for invalid game actions
-
-
-
-## 3) E2E - BDD End-to-End Tests (Browser)
-
-Validate real user flow with two browser sessions.
-
-### Must cover
-
-* Create + Join
-* Turn-taking
-* Claim after last letter
-* Claim accepted
-* Dispute valid
-* Dispute invalid
-
-Use fixed backend port and clean DB per run.
-
-
-### Scope
-
-E2E tests validate the real user flow:
-
-* Two players
-* Two browser sessions
-* UI behavior (buttons enabled/disabled)
-* Polling updates
-* Claim/Dispute behavior in a real round
-
-These tests should run against:
-
-* The real backend (started before tests)
-* The real static frontend (`wwwroot`)
-
-### Recommended tooling
-
-* **Playwright** (Node) for browser automation
-* **Cucumber** (Gherkin) for BDD, or Playwright Test + a small Gherkin layer
-
-### Why BDD here?
-
-Because the rules are naturally expressed as behavior:
-
-```gherkin
-Given a game with two players
-When player A places “H” and player B places “E”
-And player A claims
-Then the opponent can dispute
-And scoring follows the rules
+```bash
+cd Testing/SystemTests
+npm install
+npm run test
+npm run test:api
+npm run test:ui
+npm run test:headed
 ```
 
+Notes:
 
-## Test Structure
+- test and project runs regenerate BDD specs with bddgen.
+- UI tests target baseURL http://localhost:5010.
 
+## Troubleshooting
+
+- 404 on deep link refresh:
+  - Verify frontend build exists in wwwroot and SPA fallback is enabled.
+- UI tests cannot connect:
+  - Ensure backend is running on http://localhost:5010.
+- Rejoin behavior not restoring state:
+  - Clear sessionStorage/localStorage keys esl_player and esl_game, then register again.
+- Frontend dependency issues:
+
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
 ```
-/tests
-  /UnitTests
-  /ApiTests
-  /E2E
-```
 
----
+## Related Docs
 
-## Definition of Done
-
-* Unit tests cover scoring + state machine
-* API tests cover all endpoints + failure paths
-* E2E (BDD) covers one complete round
-
-  create → join → play letters → claim → accept/dispute → verify score
+- TECH-DEBT.md
 

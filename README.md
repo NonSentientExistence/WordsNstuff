@@ -1,320 +1,208 @@
-Här är en komplett svensk översättning, med samma struktur och exakt tre huvudrubriker (`#`):
+# EverySecondLetter
 
-````md
-# EverySecondLetter (Minimal API + SQL)
+Turordningsbaserat ordspel för två spelare, byggt med .NET 8 Minimal API, PostgreSQL och ett React + Vite-frontend.
+
+## Vad Repon Innehaller
+
+- Backend-API i C# (.NET 8) med SQL-lagring.
+- React-frontend i frontend/, byggs till wwwroot/ for produktion.
+- Spelregler for bokstavsspel, claim/dispute-poang och automatiskt slutspel.
+- Systemtester (API + UI BDD) med Playwright + playwright-bdd.
+
+## Teknikstack
+
+- Backend: .NET 8 Minimal API, Npgsql, PostgreSQL
+- Frontend: React 18, Vite, React Context
+- Test: Playwright, playwright-bdd
 
 ## Krav
 
-* .NET 8 SDK
-* PostgreSQL
-* `psql` (valfritt)
+- .NET 8 SDK
+- Node.js 18+
+- PostgreSQL
+- psql (valfritt men praktiskt)
 
+## Projektstruktur
 
-## Sätt upp databasen
+```text
+.
+├── Program.cs
+├── Services/
+├── Gameplay/
+├── sql/
+├── wordlists/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   └── pages/
+│   └── README.md
+├── Testing/SystemTests/
+└── wwwroot/
+```
 
-1. Skapa en databas (t.ex. `every_second_letter`)
-2. Kör SQL-skriptet i `sql/001_init.sql` i din editor, eller via kommandoraden om du har `psql` installerat:
+## Installation
+
+### 1) Databas
+
+Skapa en PostgreSQL-databas (till exempel every_second_letter) och kor:
 
 ```bash
 psql "<YOUR CONNECTION STRING>" -f sql/001_init.sql
-````
+```
 
-## Konfigurera anslutningssträng
+### 2) Anslutningsstrang
 
-Default finns i `launchSettings.json`.
+Applikationen laser anslutningsstrang fran:
 
-För att skriva över det, sätt en miljövariabel `DATABASE_URL`. 
+1. ConnectionStrings:Default
+2. DATABASE_URL (fallback)
 
-Dokumentation för miljövariabler: https://configu.com/blog/setting-env-variables-in-windows-linux-macos-beginners-guide/
+launchSettings.json innehaller lokala standardvarden, men DATABASE_URL kan skriva over.
 
+## Korlage
 
-## Starta applikationen
+### Utveckling (rekommenderas)
+
+Terminal 1:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Terminal 2:
 
 ```bash
 dotnet run
 ```
 
-Öppna den URL som visas i konsolen
-(standard: [http://localhost:5010](http://localhost:5010))
+Oppna http://localhost:5173. Vite proxar /games till http://localhost:5010.
 
-## Noteringar
+### Lokal produktionstest
 
-* Ordlistan är liten och laddas i minnet (`WordsService` använder `wordlists/enable1.txt`)
-* Rå SQL används i `GamesService` (ingen EF / repositories)
-* Minimal API-routes definieras i `Program.cs`
-
----
-
-# Spelregler
-
-## Översikt
-
-EverySecondLetter är ett turordningsbaserat ordspel för två spelare.
-
-Spelarna bygger tillsammans upp ett ord genom att lägga en bokstav i taget.
-När som helst (efter att ha lagt en bokstav) kan en spelare **claima** det aktuella ordet för att få poäng — men motspelaren kan **bestrida** (dispute) det.
-
-Spelet bygger på en risk/belönings-mekanik genom Claim / Dispute-systemet.
-
-## Spelflöde
-
-### Skapa / Gå med
-
-* Spelare 1 skapar ett spel.
-* Spelare 2 går med via Game ID.
-* Spelet startar automatiskt när två spelare är anslutna.
-
-### Lägga bokstäver
-
-* Spelarna turas om.
-
-* På din tur får du:
-
-  * Lägga **exakt en bokstav (A–Z)**.
-
-* Bokstaven läggs till i slutet av det aktuella ordet.
-
-* Turen går sedan vidare till motspelaren.
-
-Exempel:
-
-| Tur | Spelare | Ord  |
-| --- | ------- | ---- |
-| 1   | A       | H    |
-| 2   | B       | HE   |
-| 3   | A       | HEL  |
-| 4   | B       | HELL |
-
-### Claima ett ord
-
-En spelare kan klicka på **Claim Word**:
-
-* På sin tur
-  **eller**
-* Direkt efter att ha lagt sin senaste bokstav
-
-Minsta ordlängd: **3 bokstäver**
-
-När ett ord claimas:
-
-* Spelet går in i tillståndet `PendingDispute`
-* Inga fler bokstäver kan läggas
-* Motspelaren måste välja:
-
-  * **Accept**
-  * **Dispute**
-
-## Claim / Dispute-regler
-
-### Om motspelaren accepterar
-
-Den som claimade får:
-
-```
-baseScore = (antal bokstäver som claimaren lagt i detta ord)²
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+dotnet run
 ```
 
-Exempel:
+Oppna http://localhost:5010.
 
-* Ord = HELLO
-* Spelare A lade H, L, O → 3 bokstäver
-* Poäng = 3² = 9 poäng
+## Frontend Sammanfattning
 
-### Åtgärdsbegränsningar och slutspel
+- Frontend ar byggt med React + Vite och byggs till wwwroot/.
+- SPA-fallback i Program.cs skriver om icke-API och icke-filrutter till /index.html.
+- Huvudsidor:
+  - RegisterPage
+  - CreateGamePage
+  - JoinGamePage
+  - GamePage
+- Centrala komponenter:
+  - WordDisplay
+  - ScoreBoard
+  - GameControls
+- Tillstand hanteras i GameContext via useGame().
+- Persistens ar sessionStorage-forst, med localStorage-fallback for migrering av aldre data.
+- Polling av spelstatus sker for narvarande var 1000 ms i GamePage.
 
-Varje spelare börjar med **5 acceptera** och **5 bestrida**-poäng. När spelaren
-frågas om accept eller dispute tas ett av dessa poäng i anspråk och räknaren
-uppdateras i knapparna i gränssnittet.
+## Spelregler
 
-Spelet slutar helt automatiskt när **båda spelarna** har använt alla tio åtgärder.
-Den spelare som då har högst poäng vinner; oavgjort är möjligt. Gränssnittet
-visar tydligt status och vinnare i slutet.
+### Grundflode
 
-### Om motspelaren bestrider (Dispute)
+1. Spelare 1 skapar spel.
+2. Spelare 2 gar med via Game ID.
+3. Spelarna turas om att lagga en bokstav (A-Z).
+4. En spelare kan claima nar ordet har minst 3 bokstaver och spelaren la senaste bokstaven.
+5. Motspelaren svarar med Accept eller Dispute.
 
-Ordet kontrolleras mot ordlistan.
+### Poang
 
-#### Fall 1 — Ordet är giltigt
+Grundpoang:
 
-* Claimaren får **150 %** av grundpoängen
-* Motspelaren får 0
+baseScore = (antal bokstaver claimaren lagt i ordet)^2
 
-```
-finalScore = floor(baseScore × 1.5)
-```
+Om motspelaren accepterar:
 
-Detta belönar självsäkra claims.
+- Claimaren far 100% av baseScore.
 
-#### Fall 2 — Ordet är ogiltigt
+Om motspelaren bestrider och ordet ar giltigt:
 
-* Claimaren får 0
-* Motspelaren får **50 %** av grundpoängen
+- Claimaren far floor(baseScore * 1.5).
 
-```
-opponentScore = floor(baseScore × 0.5)
-```
+Om motspelaren bestrider och ordet ar ogiltigt:
 
-Detta straffar riskabla eller felaktiga claims.
+- Motspelaren far floor(baseScore * 0.5).
 
-## Efter avgörande
+### Action Limits och slutspel
 
-Efter Accept eller Dispute:
+- Varje spelare startar med 5 Accept och 5 Dispute.
+- Varje svar pa claim forbrukar en motsvarande action.
+- Spelet avslutas automatiskt nar bada spelare forbrukat alla 10 svar.
+- Hogst poang vinner, oavgjort ar mojligt.
 
-* Det aktuella ordet nollställs
-* Bokstavsbidrag nollställs
-* Turen går till motspelaren till den som claimade
-* Spelet fortsätter
+### Ordlista
 
-## Ordlista
+- ENABLE-ordlistan (wordlists/enable1.txt)
+- Skiftlagesokanslig validering
+- Minsta giltiga langd: 3
 
-* Ord valideras mot ENABLE-ordlistan
-* Validering är skiftlägesokänslig
-* Endast ord med **3 eller fler bokstäver** är tillåtna
+## API Oversikt
 
-## Strategi
+- POST /games
+- POST /games/{id}/join
+- GET /games/{id}
+- POST /games/{id}/letter
+- POST /games/{id}/claim
+- POST /games/{id}/accept
+- POST /games/{id}/dispute
 
-Spelet balanserar samarbete och konkurrens:
+Skyddade spelarhandlingar anvander X-Player-Token.
 
-* Bygg ett starkt ord tillsammans …
-* Eller sabotera subtilt.
-* Claima tidigt för säker poäng …
-* Eller ta risken och få bonus vid dispute.
+## Testning
 
----
+Testerna finns i Testing/SystemTests och ar uppdelade i:
 
-# Teststrategi
+- api
+- ui
 
-Projektet använder tre testlager:
+Kommandon:
 
-1. **Enhetstester** – regellogik och poängberäkning
-2. **API-tester** – HTTP-kontrakt och tillståndsövergångar
-3. **E2E (BDD)** – full validering av spel via webbläsare
-
-Mål: snabb tillit till regler → stabilt API → verifierat användarbeteende.
-
-## 1) Enhetstester
-
-### Omfattning
-
-Testa ren spel­logik utan:
-
-* HTTP
-* Databas
-* Webbläsare
-
-Extrahera regellogiken till en liten testbar kärna (t.ex. `GameRules`).
-
-### Måste täcka
-
-**Turregler**
-
-* Fel spelare får inte agera
-* Claim kräver minst 3 bokstäver
-* Claim är tillåtet direkt efter senast lagd bokstav
-
-**Poängberäkning**
-
-* Baspoäng = (antal lagda bokstäver)²
-* Accept → 100 %
-* Dispute giltigt → floor(150 %)
-* Dispute ogiltigt → motspelaren får floor(50 %)
-
-**Tillståndsövergångar**
-
-* InProgress → PendingDispute → InProgress
-* Ord + bokstavsbidrag nollställs efter avgörande
-
-## 2) API-tester
-
-### Omfattning
-
-Validera:
-
-* Routes
-* Statuskoder
-* DTO-struktur
-* `X-Player-Token`-autentisering
-* Tillståndsövergångar
-
-Använd:
-
-* `WebApplicationFactory<Program>`
-* En separat Postgres-testdatabas
-* Applicera schema vid teststart
-
-### Centrala scenarier
-
-* Create → Join → Get game
-* Play letter (lyckat + fel tur)
-* Claim → Accept
-* Claim → Dispute (giltigt/ogiltigt)
-* 401 vid saknad/fel token
-* 409 vid ogiltig spelåtgärd
-
-## 3) E2E – BDD End-to-End (webbläsare)
-
-Validera verkligt användarflöde med två webbläsarsessioner.
-
-### Måste täcka
-
-* Create + Join
-* Turordning
-* Claim direkt efter sista bokstaven
-* Claim accepterad
-* Dispute giltigt ord
-* Dispute ogiltigt ord
-
-Använd fast backend-port och ren testdatabas per körning.
-
-### Omfattning
-
-E2E-tester verifierar:
-
-* Två spelare
-* Två webbläsarsessioner
-* UI-beteende (aktiva/inaktiva knappar)
-* Polling-uppdateringar
-* Claim/Dispute i en komplett runda
-
-Testerna ska köras mot:
-
-* Riktig backend (startas före tester)
-* Riktig frontend (`wwwroot`)
-
-### Rekommenderade verktyg
-
-* **Playwright** (Node) för webbläsarautomation
-* **Cucumber** (Gherkin) för BDD, eller Playwright Test med ett enklare Gherkin-lager
-
-### Varför BDD?
-
-Reglerna uttrycks naturligt som beteende:
-
-```gherkin
-Given a game with two players
-When player A places "H" and player B places "E"
-And player A claims
-Then the opponent can dispute
-And scoring follows the rules
+```bash
+cd Testing/SystemTests
+npm install
+npm run test
+npm run test:api
+npm run test:ui
+npm run test:headed
 ```
 
-## Teststruktur
+Noteringar:
 
+- test och projektspecifika korningar genererar om BDD-specar med bddgen.
+- UI-testerna anvander baseURL http://localhost:5010.
+
+## Felsokning
+
+- 404 vid uppdatering av djup lanka:
+  - Kontrollera att frontend-build finns i wwwroot och att SPA-fallback ar aktiv.
+- UI-tester kan inte ansluta:
+  - Kontrollera att backend kor pa http://localhost:5010.
+- Rejoin aterstaller inte spel:
+  - Rensa sessionStorage/localStorage-nycklarna esl_player och esl_game, registrera sedan igen.
+- Problem med frontend-beroenden:
+
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
 ```
-/tests
-  /UnitTests
-  /ApiTests
-  /E2E
-```
 
----
+## Relaterad Dokumentation
 
-## Definition of Done
-
-* Enhetstester täcker poäng + tillståndsmaskin
-* API-tester täcker alla endpoints + felvägar
-* E2E (BDD) täcker minst en komplett spelrunda
-
-  create → join → play letters → claim → accept/dispute → verifiera poäng
+- TECH-DEBT.md
 
 
