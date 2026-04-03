@@ -3,14 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bdd:gen": "bddgen",
-    "test": "npm run test:unit && npm run test:api && npm run test:ui",
+    "test": "npm run test:unit && npm run test:api && npm run test:post-they",
     "test:api": "newman run postman/every-second-letter-api.postman_collection.json -e postman/local.postman_environment.json --reporters cli",
-    "test:api:ci": "newman run postman/every-second-letter-api.postman_collection.json -e postman/local.postman_environment.json --reporters cli,junit --reporter-junit-export test-results/newman-api.xml",
-    "test:ui": "npm run bdd:gen && playwright test --project=ui",
-    "test:unit": "dotnet test ../UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj",
-    "test:headed": "npm run bdd:gen && playwright test --project=ui --headed",
-    "codegen": "playwright codegen http://localhost:5010"
+    "test:post-they": "cd PostTheyTests && post-they run",
+    "test:unit": "dotnet test ../UnitTests/EverySecondLetter.UnitTests/EverySecondLetter.UnitTests.csproj"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
