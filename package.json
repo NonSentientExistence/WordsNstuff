@@ -1,5 +1,11 @@
 {
   "devDependencies": {
     "post-they": "^0.1.5"
+  },
+  "scripts": {
+    "test": "cd Testing/SystemTests && npm run test",
+    "test:api": "cd Testing/SystemTests && npm run test:api",
+    "test:ui": "cd Testing/SystemTests && npm run test:ui",
+    "test:headed": "cd Testing/SystemTests && npm run test:headed"
   }
 }
