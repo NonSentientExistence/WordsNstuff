@@ -1,5 +1,6 @@
-Sätt upp en postgres server localt, döp den till every_second_letter, om inte ändra path i Server/Properties/launchSettings.json
+# Postgres setup
 
+Sätt upp en postgres server localt, döp den till every_second_letter, om inte ändra path i Server/Properties/launchSettings.json
 
 fyll i appsettings.json med postgres värden man satt upp localt,  Server/appsettings.json
 
@@ -9,4 +10,18 @@ fyll i appsettings.json med postgres värden man satt upp localt,  Server/appset
   }
 }
 
-FÖR ATT STARTA front och backend i samma terminal npm run dev, för att bara köra frontend npm run start!!!!!!!
+
+# Starta projekt
+
+npm run dev kör båda front och backend!!!!
+
+
+# Test
+
+npm run : 
+    "dev": "npm run backend & npm run frontend",
+    "start": "npm run dev",
+    "backend": "dotnet run --project Server/EverySecondLetter.csproj",
+    "frontend": "cd frontend && npm run dev",
+    "test": "cd Testing/SystemTests && npm run test",
+    "test:api": "cd Testing/SystemTests && npm run test:api"
