@@ -1,5 +1,7 @@
 # Postgres setup
 
+Döp om appSettings-templete.json till appSettings.json
+
 Sätt upp en postgres server localt, döp den till every_second_letter, om inte ändra path i Server/Properties/launchSettings.json
 
 fyll i appsettings.json med postgres värden man satt upp localt,  Server/appsettings.json
@@ -10,14 +12,11 @@ fyll i appsettings.json med postgres värden man satt upp localt,  Server/appset
   }
 }
 
-
 # Starta projekt
-
 npm run dev kör båda front och backend!!!!
 
 
 # Test
-
 npm run : 
     "dev": "npm run backend & npm run frontend",
     "start": "npm run dev",
