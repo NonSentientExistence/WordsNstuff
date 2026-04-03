@@ -1,6 +1,6 @@
 import healthCheck from './requests/health-check.js';
 import createGame from './requests/create-game.js';
-import joinGameAsPlayer-2 from './requests/join-game-as-player-2.js';
+import joinGameAsPlayer2 from './requests/join-game-as-player-2.js';
 import getGameStateAfterJoin from './requests/get-game-state-after-join.js';
 import rejectOutOfTurnPlay from './requests/reject-out-of-turn-play.js';
 import p1PlaysT from './requests/p1-plays-t.js';
