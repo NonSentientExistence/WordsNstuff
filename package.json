@@ -3,9 +3,11 @@
     "post-they": "^0.1.5"
   },
   "scripts": {
+    "dev": "npm run backend & npm run frontend",
+    "start": "npm run dev",
+    "backend": "dotnet run --project Server/EverySecondLetter.csproj",
+    "frontend": "cd frontend && npm run dev",
     "test": "cd Testing/SystemTests && npm run test",
-    "test:api": "cd Testing/SystemTests && npm run test:api",
-    "test:ui": "cd Testing/SystemTests && npm run test:ui",
-    "test:headed": "cd Testing/SystemTests && npm run test:headed"
+    "test:api": "cd Testing/SystemTests && npm run test:api"
   }
 }
