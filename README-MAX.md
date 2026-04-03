@@ -9,4 +9,4 @@ fyll i appsettings.json med postgres värden man satt upp localt,  Server/appset
   }
 }
 
-
+FÖR ATT STARTA front och backend i samma terminal npm run dev, för att bara köra frontend npm run start!!!!!!!
