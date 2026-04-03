@@ -15,3 +15,37 @@ import validateWordCat from './requests/validate-word-cat.js';
 import validateClearlyInvalidWord from './requests/validate-clearly-invalid-word.js';
 
 export const name = 'EverySecondLetter API';
+
+export function preRequest() {
+  pm.variables.set('baseUrl', 'http://localhost:5010');
+
+  const requestName = pm.info.requestName;
+  const p1Requests = [
+    'P1 Plays T',
+    'P1 Plays S',
+    'P1 Claims Word',
+    'Claimer Cannot Accept Own Claim',
+  ];
+  const p2Requests = [
+    'Reject Out Of Turn Play',
+    'P2 Plays E',
+    'P2 Accepts Claim',
+    'Rejoin Returns Same Player Token',
+  ];
+
+  pm.request.headers.remove('X-Player-Token');
+
+  if (p1Requests.includes(requestName)) {
+    pm.request.headers.upsert({
+      key: 'X-Player-Token',
+      value: pm.collectionVariables.get('p1Token'),
+    });
+  }
+
+  if (p2Requests.includes(requestName)) {
+    pm.request.headers.upsert({
+      key: 'X-Player-Token',
+      value: pm.collectionVariables.get('p2Token'),
+    });
+  }
+}
