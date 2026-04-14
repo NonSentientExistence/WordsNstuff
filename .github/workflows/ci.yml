@@ -51,6 +51,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
+      - run: dotnet restore backend/WordsNstuff.slnx
       - run: npm run test:xunit
  
   test-e2e:
@@ -69,6 +70,7 @@ jobs:
           dotnet-version: '10.0'
  
       - run: npm ci
+      - run: dotnet restore backend/WordsNstuff
       - run: npx playwright install --with-deps
  
       - name: Start backend
