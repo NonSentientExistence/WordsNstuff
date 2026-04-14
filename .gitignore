@@ -26,6 +26,7 @@ dist-ssr
 # .NET build artifacts
 **/obj/
 **/bin/
+*.db
 
 # .NET user-specific files
 *.user
