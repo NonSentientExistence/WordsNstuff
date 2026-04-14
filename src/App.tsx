@@ -9,6 +9,7 @@ export default function App() {
     (async ()=>{
       const response = await fetch('/api/hello');
       const data = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setMessage((data as any).message);
     })();
   }, []);
