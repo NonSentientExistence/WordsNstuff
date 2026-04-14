@@ -5,6 +5,7 @@ Database.Initialize();
 var greeter = new Greeter();
 var lobbyService = new LobbyService();
 
+app.MapGet("/", () => Results.Ok());
 app.MapGet("/api/hello", () => new { message = "Hello from .NET!" });
 app.MapGet("/api/greet/{name}", (string name) => new { message = greeter.Greet(name) });
 
