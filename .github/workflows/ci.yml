@@ -1,11 +1,11 @@
 name: CI
- 
+
 on:
   push:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]
- 
+
 jobs:
   lint:
     name: Lint
@@ -18,9 +18,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
- 
+
   build:
     name: Build
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,9 +31,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
- 
+
   test-unit:
     name: Unit Tests (Vitest)
+    needs: [lint, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +44,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:vitest
- 
+
   test-backend:
     name: Backend Tests (xUnit)
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,19 +59,20 @@ jobs:
  
   test-e2e:
     name: E2E & API Tests
+    needs: [build, test-unit, test-backend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
- 
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
- 
+
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0'
- 
+          dotnet-version: '9.0'
+
       - run: npm ci
       - run: dotnet restore backend/WordsNstuff
       - run: npx playwright install
@@ -87,10 +91,10 @@ jobs:
  
       - name: Run API tests
         run: npm run test:api
- 
+
       - name: Run E2E tests
         run: npm run test:e2e
- 
+
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: failure()
