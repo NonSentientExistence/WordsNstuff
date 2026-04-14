@@ -53,9 +53,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
-      - run: dotnet test backend/WordsNstuff.Tests
-
+          dotnet-version: '10.0'
+      - run: dotnet restore backend/WordsNstuff.slnx
+      - run: npm run test:xunit
+ 
   test-e2e:
     name: E2E & API Tests
     needs: [build, test-unit, test-backend]
@@ -73,14 +74,21 @@ jobs:
           dotnet-version: '9.0'
 
       - run: npm ci
-      - run: npx playwright install --with-deps
-
+      - run: dotnet restore backend/WordsNstuff
+      - run: npx playwright install
+ 
       - name: Start backend
-        run: dotnet run --project backend/WordsNstuff &
+        run: dotnet run --project backend/WordsNstuff --urls http://localhost:5001 > backend.log 2>&1 &
 
       - name: Wait for backend to be ready
-        run: npx wait-on http://localhost:5001 --timeout 30000
+        run: npx wait-on tcp:5001 --timeout 30000 || (cat backend.log && exit 1)
 
+      - name: Start frontend
+        run: npx vite --port 5173 > frontend.log 2>&1 &
+
+      - name: Wait for frontend to be ready
+        run: npx wait-on tcp:5173 --timeout 30000 || (cat frontend.log && exit 1)
+ 
       - name: Run API tests
         run: npm run test:api
 

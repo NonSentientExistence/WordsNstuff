@@ -1,0 +1,1 @@
+// här kan vi skriva spelregler, poäng, validering
