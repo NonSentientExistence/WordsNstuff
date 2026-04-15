@@ -24,5 +24,17 @@ public static class Database
                 CreatedAt TEXT NOT NULL
             )";
         command.ExecuteNonQuery();
+
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Games (
+                LobbyCode TEXT PRIMARY KEY,
+                CurrentTurnToken TEXT NOT NULL,
+                LetterPool TEXT NOT NULL DEFAULT '',
+                Player1Hand TEXT NOT NULL DEFAULT '',
+                Player2Hand TEXT NOT NULL DEFAULT '',
+                Player1Health INTEGER NOT NULL DEFAULT 100,
+                Player2Health INTEGER NOT NULL DEFAULT 100
+            )";
+        command.ExecuteNonQuery();
     }
 }
