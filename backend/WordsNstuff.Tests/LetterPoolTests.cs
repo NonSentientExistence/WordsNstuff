@@ -21,7 +21,7 @@ public class LetterPoolTests
     public void GenerateLetterPool_ContainsVowels()
     {
         var pool = LetterPool.Generate(100);
-        var vowels = new[] {'A','E','I','O','U'};
+        var vowels = new[] { 'A', 'E', 'I', 'O', 'U' };
         Assert.Contains(pool, letter => vowels.Contains(letter));
     }
 
@@ -33,4 +33,4 @@ public class LetterPoolTests
         var pool2 = LetterPool.Generate(20);
         Assert.NotEqual(pool1, pool2);
     }
-}    
+}
