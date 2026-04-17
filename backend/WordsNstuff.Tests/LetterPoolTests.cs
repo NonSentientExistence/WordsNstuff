@@ -5,7 +5,7 @@ public class LetterPoolTests
     public void GenerateLetterPool_ReturnsCorrectPoolSize()
     {
         var pool = LetterPool.Generate(20);
-        Assert.Equal(20, pool.count);
+        Assert.Equal(20, pool.Count);
     }
 
     //Tests so all letters in the pool are valid letters (A - Z)
