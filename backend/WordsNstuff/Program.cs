@@ -39,4 +39,7 @@ app.MapPost("/api/lobbies/{code}/start", (string code, HttpRequest request) =>
     return started ? Results.Ok() : Results.BadRequest("Could not start game");
 });
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.Run();
