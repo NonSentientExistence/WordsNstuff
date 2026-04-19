@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLobby } from '../api'
+import Header from '../parts/Header'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -19,11 +20,8 @@ export default function Home() {
 
   return (
     <div>
-      <h1>WordsNstuff</h1>
+      <Header />
       <button onClick={handleCreate}>Skapa lobby</button>
-
-      <hr />
-
       <h2>Eller gå med i en lobby</h2>
       <input
         type="text"
