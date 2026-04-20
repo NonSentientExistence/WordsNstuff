@@ -1,5 +1,13 @@
 var builder = WebApplication.CreateBuilder(args);
+
+//Register WordValidator singleton, word list loaded once and then shared
+builder.Services.AddSingleton<WordValidator>(new WordValidator("Resources/words.txt"));
+// Regiser Gameservice singleton, keeps active games until end of application
+builder.Services.AddSingleton<GameService>();
+
 var app = builder.Build();
+
+
 
 Database.Initialize();
 var greeter = new Greeter();
