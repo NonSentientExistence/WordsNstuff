@@ -9,12 +9,12 @@ export default function Home() {
 
   const handleCreate = async () => {
     const code = await createLobby()
-    navigate(`/lobby/${code}`)
+    navigate(`/play/${code}`)
   }
 
   const handleJoin = () => {
     if (joinCode.trim()) {
-      navigate(`/lobby/${joinCode.trim().toUpperCase()}`)
+      navigate(`/play/${joinCode.trim().toUpperCase()}`)
     }
   }
 
