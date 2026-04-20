@@ -19,6 +19,20 @@ public class LobbyService
         return code;
     }
 
+    public (string? player1Token, string? player2Token) GetPlayerTokens(string code)
+{
+    using var connection = Database.GetConnection();
+    var cmd = connection.CreateCommand();
+    cmd.CommandText = "SELECT Player1Token, Player2Token FROM Lobbies WHERE Code = @code";
+    cmd.Parameters.AddWithValue("@code", code);
+    using var reader = cmd.ExecuteReader();
+    if (!reader.Read()) return (null, null);
+    return (
+        reader.GetString(0),
+        reader.IsDBNull(1) ? null : reader.GetString(1)
+    );
+}
+
     public bool JoinLobby(string code, string playerToken)
     {
         using var connection = Database.GetConnection();
