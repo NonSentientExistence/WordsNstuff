@@ -22,15 +22,21 @@ export default function Game() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
 
-  // Poll game state every second
-  useEffect(() => {
+  // Poll game state every second, reset submitted state when a new round starts
+ useEffect(() => {
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
-      setGame(data)
 
-      // Stop polling and navigate when game is finished
+      // Reset submitted when HP changes
+      setGame(prev => {
+        if (prev && (prev.player1Hp !== data.player1Hp || prev.player2Hp !== data.player2Hp)) {
+          setSubmitted(false)
+        }
+        return data
+      })
+
       if (data.status === 'Finished') {
         clearInterval(intervalRef.current!)
         navigate(`/game/${code}/finished`)
@@ -39,6 +45,7 @@ export default function Game() {
 
     return () => clearInterval(intervalRef.current!)
   }, [code, navigate])
+
 
   const handleSubmit = async () => {
     if (!code || !word.trim() || submitted) return
@@ -52,11 +59,6 @@ export default function Game() {
       setMessage('Invalid word, try again!')
     }
   }
-
-  // Reset submitted state when a new round starts (words cleared = new round)
-  useEffect(() => {
-    if (game) setSubmitted(false)
-  }, [game?.player1Hp, game?.player2Hp])
 
   if (!game) return <p>Loading game...</p>
 

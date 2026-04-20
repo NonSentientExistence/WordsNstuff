@@ -4,6 +4,7 @@ import createLobby from './requests/create-lobby.js';
 import joinLobby from './requests/join-lobby.js';
 import startGame from './requests/start-game.js';
 import getGame from './requests/get-game.js';
+import setPool from './requests/set-pool.js';
 import submitWord from './requests/submit-word.js';
 
 export const name = 'FromScratchAPI';
@@ -26,5 +27,6 @@ export const order = [
   joinLobby,
   startGame,
   getGame,
+  setPool,
   submitWord
 ];

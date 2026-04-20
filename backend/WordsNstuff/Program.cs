@@ -83,6 +83,13 @@ app.MapPost("/api/games/{code}/submit", async (string code, HttpRequest request,
     return accepted ? Results.Ok() : Results.BadRequest("Invalid word");
 });
 
+// Test only, sets a known letter pool for API tests.
+app.MapPost("/api/games/{code}/set-pool-test", (string code, GameService gameService) =>
+{
+    gameService.SetPoolForTesting(code, new[] { 'A','T','N','E','R','S','I','O','L','D','A','T','N','E','R','S','I','O','L','D' });
+    return Results.Ok();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
