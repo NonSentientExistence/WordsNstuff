@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <div>
-      <Header />
+      <Header title='WordsNstuff' subtitle= 'Arenan där två spelare möts i ordstrider — bygg starka ord, krossa motståndaren.'/>
       <button onClick={handleCreate}>Skapa lobby</button>
       <h2>Eller gå med i en lobby</h2>
       <input

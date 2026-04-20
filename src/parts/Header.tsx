@@ -2,20 +2,33 @@ import logo from '../assets/WordsLogo.png';
 
 interface HeaderProp {
     title?: string;
+    subtitle?: string
 }
 
-const Header: React.FC<HeaderProp> = ({ title }) => {
+function Header ({ title, subtitle }: HeaderProp) 
+{
   return (
-    <header className="header">
+    <header style={{
+       display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+    }}>
       <img
         src={logo}
-        alt="Logo"
+        alt="WordsNstuff"
         style={{ height: '120px', width: 'auto' }}
-      />
+       /> 
       {title && (
-        <span style={{ fontSize: '20px', fontWeight: 600, color: '#333' }}>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#3d3d3d' }}>
           {title}
-        </span>
+        </h1>
+      )}
+      {subtitle && (
+        <h2 style={{ fontSize: '16px', color: '#666' }}>
+          {subtitle}
+        </h2>
       )}
     </header>
   );
