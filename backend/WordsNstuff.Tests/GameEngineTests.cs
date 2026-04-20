@@ -4,7 +4,8 @@ public class GameEngineTests
     private (GameEngine engine, GameState game) CreateGame()
     {
         var game = new GameState("player1", "player2");
-        var engine = new GameEngine(game);
+        var validator = new WordValidator("Resources/words.txt");
+        var engine = new GameEngine(game, validator);
         return (engine, game);
     }
 
