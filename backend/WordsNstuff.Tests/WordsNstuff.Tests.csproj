@@ -22,4 +22,10 @@
     <ProjectReference Include="..\WordsNstuff\WordsNstuff.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\WordsNstuff\Resources\words.txt" Link="Resources\words.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+</ItemGroup>
+
 </Project>
