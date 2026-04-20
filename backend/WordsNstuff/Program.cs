@@ -5,7 +5,6 @@ Database.Initialize();
 var greeter = new Greeter();
 var lobbyService = new LobbyService();
 
-app.MapGet("/", () => Results.Ok());
 app.MapGet("/api/hello", () => new { message = "Hello from .NET!" });
 app.MapGet("/api/greet/{name}", (string name) => new { message = greeter.Greet(name) });
 
@@ -38,5 +37,8 @@ app.MapPost("/api/lobbies/{code}/start", (string code, HttpRequest request) =>
     var started = lobbyService.StartGame(code, token);
     return started ? Results.Ok() : Results.BadRequest("Could not start game");
 });
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.Run();
