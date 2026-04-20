@@ -25,3 +25,18 @@ export async function startGame(code: string): Promise<boolean> {
   const res = await fetch(`/api/lobbies/${code}/start`, { method: 'POST', headers: headers() })
   return res.ok
 }
+
+export async function getGame(code: string) {
+  const res = await fetch(`/api/games/${code}`, { headers: headers() })
+  if (!res.ok) return null
+  return res.json()
+}
+
+export async function submitWord(code: string, word: string): Promise<boolean> {
+  const res = await fetch(`/api/games/${code}/submit`, {
+    method: 'POST',
+    headers: { ...headers(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ word })
+  })
+  return res.ok
+}

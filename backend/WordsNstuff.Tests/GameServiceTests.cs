@@ -40,6 +40,13 @@ public class GameServiceTests
     public void SubmitWord_ValidWord_IsStored()
     {
         _service.StartGame("ABC123", "player1", "player2");
+        //Set a pool of words to pass tests, otherwise tests fails due to random letter pool generation
+        _service.SetPoolForTesting("ABC123", new[] 
+        { 
+            'C','A','T','D','O','G','Q','U','I','Z',
+            'W','O','R','D','S','P','L','A','Y','E' 
+        });
+
         _service.SubmitWord("ABC123", "player1", "cat");
         var game = _service.GetGame("ABC123");
         Assert.Equal("CAT", game!.Player1Word);

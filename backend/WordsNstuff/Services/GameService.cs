@@ -29,9 +29,20 @@ public class GameService
     }
 
     //If submitted to a game that doesn't exist, will do nothing as TryGetValue will return false
-    public void SubmitWord(string gameId, string playerId, string word)
+    public bool SubmitWord(string gameId, string playerId, string word)
     {
         if (_games.TryGetValue(gameId, out var game))
-            game.engine.SubmitWord(playerId, word);
+        return game.engine.SubmitWord(playerId, word);
+        return false;    
+    }
+
+    // Only for testing, allows for setting a known pool of letters for tests
+    public void SetPoolForTesting(string gameId, char[] letters)
+    {
+        if (_games.TryGetValue(gameId, out var game))
+        {
+            game.state.Pool.Clear();
+            game.state.Pool.AddRange(letters);
+        }
     }
 }

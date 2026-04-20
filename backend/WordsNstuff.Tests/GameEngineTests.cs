@@ -5,6 +5,16 @@ public class GameEngineTests
     {
         var game = new GameState("player1", "player2");
         var validator = new WordValidator("Resources/words.txt");
+
+        // Sets a already know pool of letters for SubmitWord_WordWithLettersNotInPool_IsRejected test
+        // Will fail due to randomly generated word pool otherwise
+        game.Pool.Clear();
+        game.Pool.AddRange(new[]
+        {
+            'C','A','T','D','O','G','Q','U','I','Z',
+            'W','O','R','D','S','P','L','A','Y','E'
+        });
+
         var engine = new GameEngine(game, validator);
         return (engine, game);
     }
@@ -122,5 +132,18 @@ public class GameEngineTests
         var (engine, game) = CreateGame();
         engine.SubmitWord("player1", "cat");
         Assert.Equal("CAT", game.Player1Word);
+    }
+
+    // Ensure a word using letters not in the pool is rejected
+    [Fact]
+    public void SubmitWord_WordWithLettersNotInPool_IsRejected()
+    {
+        var (engine, game) = CreateGame();
+        // Override pool with known letters
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'C', 'A', 'T' });
+        // DOG needs D, O, G — none of which are in the pool
+        var result = engine.SubmitWord("player1", "dog");
+        Assert.False(result);
     }
 }

@@ -10,19 +10,28 @@ public class GameEngine
         _validator = validator;
     }
 
-    public void SubmitWord(string playerId, string word)
+    public bool SubmitWord(string playerId, string word)
     {
         //Reject if word isn't in the dictionary 
-        if (!_validator.IsValid(word)) return;
+        if (!_validator.IsValid(word)) return false;
+
+        // Check that all letters in the word exist in the pool
+    var pool = new List<char>(_state.Pool); // copy so we don't modify the original
+    foreach (var letter in word.ToUpper())
+    {
+        if (!pool.Remove(letter)) return false; // letter not in pool
+    }
         // Store the submitted word to the correct player
         if (playerId == _state.Player1.Id)
             _state.Player1Word = word.ToUpper();
         else if (playerId == _state.Player2.Id)
             _state.Player2Word = word.ToUpper();
-
+        else return false;
         // Only resolve round when both players have submitted
         if (_state.Player1Word != null && _state.Player2Word != null)
             ResolveRound();
+
+        return true;
     }
 
     private void ResolveRound()
