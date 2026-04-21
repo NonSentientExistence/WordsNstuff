@@ -1,16 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getGame, submitWord } from '../api'
 import { getPlayerToken } from '../playerToken'
 
-interface GameState {
-  status: string
-  pool: string[]
-  player1Hp: number
-  player2Hp: number
-  player1Id: string
-  player2Id: string
-}
 
 interface GameProps {
   onEnd: () => void
@@ -18,7 +10,6 @@ interface GameProps {
 
 export default function Game({onEnd}: GameProps) {
   const { code } = useParams<{ code: string }>()
-  const navigate = useNavigate()
   const [game, setGame] = useState<GameState | null>(null)
   const [word, setWord] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -43,12 +34,12 @@ export default function Game({onEnd}: GameProps) {
 
       if (data.status === 'Finished') {
         clearInterval(intervalRef.current!)
-        navigate(`/game/${code}/finished`)
+        onEnd()
       }
     }, 1000)
 
     return () => clearInterval(intervalRef.current!)
-  }, [code, navigate])
+  }, [code, onEnd])
 
 
   const handleSubmit = async () => {
