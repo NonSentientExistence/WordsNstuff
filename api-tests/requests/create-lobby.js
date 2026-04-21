@@ -5,6 +5,7 @@ export default {
 
 export function preRequest() {
   pm.request.headers.add({ key: 'X-Player-Token', value: 'test-host-token' });
+  pm.request.headers.add({ key: 'X-Player-Token', value: pm.variables.get('player1Token') });
 }
 
 export function postResponse() {
@@ -17,5 +18,7 @@ export function postResponse() {
   pm.test('Lobby code is 6 characters', () =>
     pm.expect(json.code).to.have.lengthOf(6)
   );
+  const json = pm.response.json();
+  pm.test('Response has lobby code', () => pm.expect(json.code).to.be.a('string'));
   pm.variables.set('lobbyCode', json.code);
 }
