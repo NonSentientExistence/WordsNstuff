@@ -1,0 +1,10 @@
+node_modules
+dist
+backend/**/bin
+backend/**/obj
+backend/**/*.db
+.git
+.github
+test-results
+e2e
+api-tests

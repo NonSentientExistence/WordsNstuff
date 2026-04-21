@@ -1,22 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import App from '../App'
 
 describe('App', () => {
-  beforeEach(() => {
-    // Mocka fetch — det finns ingen riktig backend under testning
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      json: async () => ({ message: 'Hello from mock!' })
-    } as Response)
+  it('visar startsidan med rubrik', () => {
+    render(<App />)
+    expect(screen.getByText('WordsNstuff')).toBeInTheDocument()
   })
 
-  it('visar en rubrik', () => {
+  it('visar skapa lobby-knapp', () => {
     render(<App />)
-    expect(screen.getByText('A message from our backend')).toBeInTheDocument()
-  })
-
-  it('visar meddelandet från API:et', async () => {
-    render(<App />)
-    expect(await screen.findByText('Hello from mock!')).toBeInTheDocument()
+    expect(screen.getByText('Skapa lobby')).toBeInTheDocument()
   })
 })

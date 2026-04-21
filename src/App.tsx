@@ -1,21 +1,18 @@
-import { useState, useEffect } from 'react'
-
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import Lobby from './pages/Lobby'
+import Game from './pages/Game'
+import Finished from './pages/Finished'
 
 export default function App() {
-
-  const [message,setMessage] = useState('');
-
-  useEffect(()=>{
-    (async ()=>{
-      const response = await fetch('/api/hello');
-      const data = await response.json();
-      setMessage((data as any).message);
-    })();
-  }, []);
-
-  return <>
-    <h1>A message from our backend</h1>
-    <p>{message}</p>
-  </>
-
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/lobby/:code" element={<Lobby />} />
+        <Route path="/game/:code" element={<Game />} />
+        <Route path="/game/:code/finished" element={<Finished />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
