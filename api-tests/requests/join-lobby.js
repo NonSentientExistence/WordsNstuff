@@ -1,10 +1,13 @@
 export default {
   method: 'POST',
-  url: '{{baseUrl}}/api/lobbies/{{lobbyCode}}/join'
+  url: '{{baseUrl}}/api/lobbies/{{lobbyCode}}/join',
+  body: {
+    name: 'Testgäst'
+  }
 };
 
 export function preRequest() {
-  pm.request.headers.add({ key: 'X-Player-Token', value: 'test-joiner-token' });
+  pm.request.headers.add({ key: 'X-Player-Token', value: pm.variables.get('player2Token') });
 }
 
 export function postResponse() {
