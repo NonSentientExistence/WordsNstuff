@@ -4,7 +4,7 @@ export default {
 };
 
 export function preRequest() {
-  pm.request.headers.add({ key: 'X-Player-Token', value: 'test-host-token' });
+  pm.request.headers.add({ key: 'X-Player-Token', value: pm.variables.get('player1Token') });
 }
 
 export function postResponse() {
