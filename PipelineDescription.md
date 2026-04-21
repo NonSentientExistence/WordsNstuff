@@ -18,6 +18,10 @@ Runs two types of integration tests. The API tests use post-they and Newman to r
 **Lint**
 Runs ESLint across the entire codebase to enforce consistent code style and catch common React mistakes such as incorrect hook usage.
 
+**Mutation Tests (Stryker)**
+
+Runs mutation testing using Stryker to verify the quality of the test suite itself. Stryker introduces small deliberate changes to the source code — such as flipping operators or changing return values — and checks whether the existing tests detect them. A killed mutation means the tests caught the bug. A surviving mutation reveals a gap in test coverage. The report is saved as an artifact and can be downloaded from the Actions tab after each run. This stage does not block merging.
+
 ## Branch protection
 
 The `dev` and `main` branches are protected. All four pipeline stages must pass and at least one team member must approve the pull request before merging is allowed.

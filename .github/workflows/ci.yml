@@ -1,11 +1,9 @@
 name: CI
-
 on:
   push:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]
-
 jobs:
   lint:
     name: Lint
@@ -18,7 +16,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-
   build:
     name: Build
     needs: [lint]
@@ -31,7 +28,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-
   test-unit:
     name: Unit Tests (Vitest)
     needs: [lint, build]
@@ -44,7 +40,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:vitest
-
   test-backend:
     name: Backend Tests (xUnit)
     needs: [lint]
@@ -56,48 +51,61 @@ jobs:
           dotnet-version: '10.0'
       - run: dotnet restore backend/WordsNstuff.slnx
       - run: npm run test:xunit
- 
+
   test-e2e:
     name: E2E & API Tests
     needs: [build, test-unit, test-backend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0'
-
       - run: npm ci
       - run: dotnet restore backend/WordsNstuff
       - run: npx playwright install
- 
+
       - name: Start backend
         run: dotnet run --project backend/WordsNstuff --urls http://localhost:5001 > backend.log 2>&1 &
-
       - name: Wait for backend to be ready
         run: npx wait-on tcp:5001 --timeout 30000 || (cat backend.log && exit 1)
-
       - name: Start frontend
         run: npx vite --port 5173 > frontend.log 2>&1 &
-
       - name: Wait for frontend to be ready
         run: npx wait-on tcp:5173 --timeout 30000 || (cat frontend.log && exit 1)
- 
+
       - name: Run API tests
         run: npm run test:api
-
       - name: Run E2E tests
         run: npm run test:e2e
-
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report
           path: playwright-report/
+
+  test-mutation:
+    name: Mutation Tests (Stryker)
+    needs: [test-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+      - run: dotnet restore backend/WordsNstuff.slnx
+      - name: Install Stryker
+        run: dotnet tool install -g dotnet-stryker
+      - name: Run mutation tests
+        run: cd backend && dotnet stryker --reporter "cleartext"
+        continue-on-error: true
+      - name: Upload Stryker report
+        uses: actions/upload-artifact@v4
+        with:
+          name: stryker-report
+          path: backend/StrykerOutput/

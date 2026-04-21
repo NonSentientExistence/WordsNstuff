@@ -1,0 +1,6 @@
+{
+  "stryker-config": {
+    "reporters": ["html", "cleartext"],
+    "mutation-level": "Standard"
+  }
+}
