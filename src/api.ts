@@ -12,6 +12,10 @@ export async function createLobby(): Promise<string> {
 
 export async function joinLobby(code: string): Promise<boolean> {
   const res = await fetch(`/api/lobbies/${code}/join`, { method: 'POST', headers: headers() })
+  if (!res.ok) {
+    const error = await res.text()
+    console.error('joinLobby failed:', error) // ← visa exakt felmeddelandet
+  }
   return res.ok
 }
 

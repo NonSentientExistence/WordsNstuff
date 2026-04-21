@@ -36,6 +36,12 @@ public class LobbyService
     public bool JoinLobby(string code, string playerToken)
     {
         using var connection = Database.GetConnection();
+        var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = "SELECT Player1Token FROM Lobbies WHERE code = @code";
+        checkCmd.Parameters.AddWithValue("@code", code);
+        var player1 = checkCmd.ExecuteScalar()?.ToString();
+        if (player1 == playerToken) return true;
+        
         var cmd = connection.CreateCommand();
         cmd.CommandText = @"
             UPDATE Lobbies 

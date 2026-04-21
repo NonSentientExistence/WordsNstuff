@@ -8,7 +8,7 @@ export function useLobby(onStart: () => void) {
     const [status, setStatus] = useState('waiting')
     const hasJoined = useRef(false)
 
-    const link = `${window.location.origin}/lobby/${code}`
+    const link = `${window.location.origin}/play/${code}`
 
     useEffect(() =>
     {

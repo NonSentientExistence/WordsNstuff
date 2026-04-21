@@ -12,8 +12,18 @@ interface GameState {
   player2Id: string
 }
 
+export function useGame(onEnd: () => void) {
+    const { code } = useParams<{ code: string }>()
+    const [game, setGame] = useState<GameState | null>(null)
+    const [word, setWord] = useState('')
+    const [submitted, setSubmitted] = useState(false)
+    const [message, setMessage] = useState('')
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  
+
   // Poll game state every second, reset submitted state when a new round starts
- useEffect(() => {
+  useEffect(() => 
+  {
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
@@ -37,7 +47,8 @@ interface GameState {
   }, [code, onEnd])
 
 
-  const handleSubmit = async () => {
+  const handleSubmit = async () => 
+  {
     if (!code || !word.trim() || submitted) return
 
     const success = await submitWord(code, word.trim())
@@ -50,8 +61,9 @@ interface GameState {
     }
   }
 
-  if (!game) return <p>Loading game...</p>
-
   const token = getPlayerToken()
-  const myHp = game.player1Id === token ? game.player1Hp : game.player2Hp
-  const opponentHp = game.player1Id === token ? game.player2Hp : game.player1Hp
+  const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
+  const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
+
+  return {game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit}
+}
