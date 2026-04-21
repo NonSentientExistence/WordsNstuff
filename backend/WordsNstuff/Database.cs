@@ -24,5 +24,17 @@ public static class Database
                 CreatedAt TEXT NOT NULL
             )";
         command.ExecuteNonQuery();
+
+        // Migrate: add name columns if they don't exist
+        foreach (var col in new[] { "Player1Name", "Player2Name" })
+        {
+            try
+            {
+                var alter = connection.CreateCommand();
+                alter.CommandText = $"ALTER TABLE Lobbies ADD COLUMN {col} TEXT";
+                alter.ExecuteNonQuery();
+            }
+            catch { /* column already exists */ }
+        }
     }
 }
