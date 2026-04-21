@@ -22,7 +22,9 @@ export default function Lobby() {
     if (code) {
       if (!hasJoined.current) {
         hasJoined.current = true
-        joinLobby(code, name)
+        joinLobby(code, name).then(joined => {
+          if (!joined) updateLobbyName(code, name)
+        })
       } else {
         updateLobbyName(code, name)
       }
@@ -32,7 +34,9 @@ export default function Lobby() {
   useEffect(() => {
     if (!hasJoined.current && code && playerName) {
       hasJoined.current = true
-      joinLobby(code, playerName)
+      joinLobby(code, playerName).then(joined => {
+        if (!joined) updateLobbyName(code, playerName)
+      })
     }
   }, [code, playerName])
 
