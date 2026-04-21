@@ -1,0 +1,391 @@
+.player-health-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  --size: 64px;
+  --color-healthy: #22c55e;
+  --color-damaged: #f59e0b;
+  --color-critical: #ef4444;
+  --color-defeated: #7f1d1d;
+}
+
+.head-container {
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.head {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--color-healthy);
+  border-radius: 50%;
+  transition: all 0.4s ease;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.1),
+    inset 0 -5px 10px rgba(255, 255, 255, 0.3);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+}
+
+.eye {
+  position: absolute;
+  width: 14%;
+  height: 14%;
+  background: #000;
+  border-radius: 50%;
+  top: 35%;
+  transition: all 0.3s ease;
+}
+
+.eye.left {
+  left: 28%;
+}
+
+.eye.right {
+  right: 20%;
+}
+
+.eye.x-eye {
+  height: 2px;
+  background: transparent;
+  border-top: 3px solid #000;
+  transform: rotate(45deg);
+}
+
+.eye.x-eye::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #000;
+  transform: rotate(-90deg);
+}
+
+.mouth {
+  position: absolute;
+  left: 52%;
+  top: 63%;
+  width: 30%;
+  height: 14%;
+  border-bottom: 4px solid #111;
+  border-radius: 0 0 999px 999px;
+  transform: translateX(-50%) rotate(-6deg);
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.mouth.sad {
+  top: 66%;
+  width: 26%;
+  border-bottom: none;
+  border-top: 4px solid #111;
+  border-radius: 999px 999px 0 0;
+  transform: translateX(-50%) rotate(10deg);
+}
+
+.blood-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-radial-gradient(circle at 30% 30%,
+      var(--color-critical) 0px,
+      var(--color-critical) 2px,
+      transparent 2px,
+      transparent 8px);
+  opacity: 0.6;
+  animation: blood-pulse 2s infinite;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.crack-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(45deg, transparent 45%, rgba(0, 0, 0, 0.4) 45%, rgba(0, 0, 0, 0.4) 55%, transparent 55%);
+}
+
+.crack-1 {
+  transform: rotate(15deg) translateY(10px);
+}
+
+.crack-2 {
+  transform: rotate(-20deg) translateY(-5px);
+  background: linear-gradient(-45deg, transparent 40%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.5) 60%, transparent 60%);
+}
+
+.crack-3 {
+  transform: rotate(70deg) scale(0.8);
+  background: linear-gradient(135deg, transparent 30%, rgba(0, 0, 0, 0.6) 30%, rgba(0, 0, 0, 0.6) 70%, transparent 70%);
+}
+
+.crack-4 {
+  transform: rotate(-60deg) scale(0.9) translateX(-5px);
+  background: linear-gradient(90deg, transparent 35%, rgba(0, 0, 0, 0.5) 35%, rgba(0, 0, 0, 0.5) 65%, transparent 65%);
+}
+
+.bandage {
+  position: absolute;
+  background: #e5e7eb;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.bandage-head {
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 10%;
+  animation: bandage-pulse 1.5s infinite;
+}
+
+.status-healthy .head {
+  background: var(--color-healthy);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+}
+
+.status-damaged .head {
+  background: var(--color-damaged);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+  transform: scale(0.95) rotate(-2deg);
+}
+
+.status-damaged .bandage-head {
+  display: block;
+}
+
+.status-critical .head {
+  background: var(--color-critical);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+  animation: head-throb 0.8s infinite;
+}
+
+.status-critical .blood-overlay {
+  animation: blood-drip 1s infinite;
+}
+
+.status-defeated .head {
+  background: var(--color-defeated);
+  transform: scale(0.85) translateY(10px);
+  opacity: 0.6;
+  filter: blur(1px) grayscale(40%);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.damage-animation {
+  animation: damage-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes blood-pulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes blood-drip {
+
+  0%,
+  100% {
+    background: repeating-radial-gradient(circle at 30% 30%,
+        var(--color-critical) 0px,
+        var(--color-critical) 3px,
+        transparent 3px,
+        transparent 10px);
+  }
+
+  50% {
+    background: repeating-radial-gradient(circle at 35% 35%,
+        var(--color-critical) 0px,
+        var(--color-critical) 5px,
+        transparent 5px,
+        transparent 12px);
+  }
+}
+
+@keyframes head-throb {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes bandage-pulse {
+
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.health-segments {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.segment {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--color-healthy);
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.segment.active {
+  transform: scale(1);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+}
+
+.segment.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.4) 100%);
+  animation: shimmer 2s infinite;
+}
+
+.segment.broken {
+  background: #4b5563;
+  opacity: 0.4;
+  transform: scale(0.7) translateY(5px);
+  border: 2px dashed #9ca3af;
+  box-shadow: none;
+}
+
+.status-damaged .segment.active {
+  background: var(--color-damaged);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.status-critical .segment.active {
+  background: var(--color-critical);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  animation: segment-crack 3s infinite;
+}
+
+.status-defeated .segment.active {
+  background: var(--color-defeated);
+}
+
+@keyframes segment-crack {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes damage-shake {
+
+  10%,
+  90% {
+    transform: translate3d(-2px, 0, 0) rotate(-3deg);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(3px, 0, 0) rotate(3deg);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0) rotate(-5deg);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0) rotate(5deg);
+  }
+}
+
+.health-label {
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 4px;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.health-label.status-healthy {
+  color: var(--color-healthy);
+}
+
+.health-label.status-damaged {
+  color: var(--color-damaged);
+}
+
+.health-label.status-critical {
+  color: var(--color-critical);
+  animation: label-flash 1s infinite;
+}
+
+.health-label.status-defeated {
+  color: var(--color-defeated);
+  text-decoration: line-through;
+}
+
+@keyframes label-flash {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
