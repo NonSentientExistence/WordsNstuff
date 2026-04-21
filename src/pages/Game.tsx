@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getGame, submitWord } from '../api'
+import { getGame, getLobby, submitWord } from '../api'
 import { getPlayerToken } from '../playerToken'
 
 interface GameState {
@@ -10,17 +10,26 @@ interface GameState {
   player2Hp: number
   player1Id: string
   player2Id: string
+  player1Name?: string
+  player2Name?: string
 }
 
 export default function Game() {
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
   const [game, setGame] = useState<GameState | null>(null)
+  const [lobbyNames, setLobbyNames] = useState<{ player1Name: string | null, player2Name: string | null }>({ player1Name: null, player2Name: null })
   const [word, setWord] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [message, setMessage] = useState('')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
+
+  useEffect(() => {
+    if (code) getLobby(code).then(lobby => {
+      if (lobby) setLobbyNames({ player1Name: lobby.player1Name, player2Name: lobby.player2Name })
+    })
+  }, [code])
 
   // Poll game state every second, reset submitted state when a new round starts
  useEffect(() => {
@@ -63,8 +72,11 @@ export default function Game() {
   if (!game) return <p>Loading game...</p>
 
   const token = getPlayerToken()
-  const myHp = game.player1Id === token ? game.player1Hp : game.player2Hp
-  const opponentHp = game.player1Id === token ? game.player2Hp : game.player1Hp
+  const isPlayer1 = game.player1Id === token
+  const myHp = isPlayer1 ? game.player1Hp : game.player2Hp
+  const opponentHp = isPlayer1 ? game.player2Hp : game.player1Hp
+  const myName = sessionStorage.getItem('playerName') || 'Du'
+  const opponentName = isPlayer1 ? (lobbyNames.player2Name || 'Opponent') : (lobbyNames.player1Name || 'Opponent')
 
   return (
     <div>
@@ -72,8 +84,8 @@ export default function Game() {
 
       {/* HP display */}
       <div>
-        <p>Your HP: {myHp}</p>        {/* ← use myHp */}
-        <p>Opponent HP: {opponentHp}</p>  {/* ← use opponentHp */}
+        <p>Your HP: {myHp} ({myName})</p>
+        <p>Opponent HP: {opponentHp} ({opponentName})</p>
       </div>
 
       {/* Letter pool */}
