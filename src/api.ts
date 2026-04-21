@@ -1,17 +1,28 @@
 import { getPlayerToken } from './playerToken'
 
 function headers() {
-  return { 'X-Player-Token': getPlayerToken() }
+  return {
+    'X-Player-Token': getPlayerToken(),
+    'Content-Type': 'application/json',
+  }
 }
 
-export async function createLobby(): Promise<string> {
-  const res = await fetch('/api/lobbies', { method: 'POST', headers: headers() })
+export async function createLobby(name = 'Anonym'): Promise<string> {
+  const res = await fetch('/api/lobbies', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ name }),
+  })
   const data = await res.json()
   return data.code
 }
 
-export async function joinLobby(code: string): Promise<boolean> {
-  const res = await fetch(`/api/lobbies/${code}/join`, { method: 'POST', headers: headers() })
+export async function joinLobby(code: string, name = 'Anonym'): Promise<boolean> {
+  const res = await fetch(`/api/lobbies/${code}/join`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ name }),
+  })
   return res.ok
 }
 
@@ -19,6 +30,15 @@ export async function getLobby(code: string) {
   const res = await fetch(`/api/lobbies/${code}`, { headers: headers() })
   if (!res.ok) return null
   return res.json()
+}
+
+export async function updateLobbyName(code: string, name: string): Promise<boolean> {
+  const res = await fetch(`/api/lobbies/${code}/name`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ name }),
+  })
+  return res.ok
 }
 
 export async function startGame(code: string): Promise<boolean> {
@@ -35,7 +55,7 @@ export async function getGame(code: string) {
 export async function submitWord(code: string, word: string): Promise<boolean> {
   const res = await fetch(`/api/games/${code}/submit`, {
     method: 'POST',
-    headers: { ...headers(), 'Content-Type': 'application/json' },
+    headers: headers(),
     body: JSON.stringify({ word })
   })
   return res.ok
