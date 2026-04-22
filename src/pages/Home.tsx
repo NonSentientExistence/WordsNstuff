@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLobby } from '../api'
+import Header from '../parts/Header'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -8,22 +9,19 @@ export default function Home() {
 
   const handleCreate = async () => {
     const code = await createLobby()
-    navigate(`/lobby/${code}`)
+    navigate(`/play/${code}`)
   }
 
   const handleJoin = () => {
     if (joinCode.trim()) {
-      navigate(`/lobby/${joinCode.trim().toUpperCase()}`)
+      navigate(`/play/${joinCode.trim().toUpperCase()}`)
     }
   }
 
   return (
     <div>
-      <h1>WordsNstuff</h1>
+      <Header title='WordsNstuff' subtitle= 'Arenan där två spelare möts i ordstrider — bygg starka ord, krossa motståndaren.'/>
       <button onClick={handleCreate}>Skapa lobby</button>
-
-      <hr />
-
       <h2>Eller gå med i en lobby</h2>
       <input
         type="text"

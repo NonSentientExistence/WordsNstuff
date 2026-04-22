@@ -14,6 +14,7 @@
     "test:api": "post-they run api-tests",
     "test:e2e": "npx bddgen && npx playwright test",
     "test:vitest": "vitest run",
+    "test:three": "npm run test:api && npm run test:e2e && npm run test:vitest",
     "test": "npm run test:xunit && npm run test:api && npm run test:e2e && npm run test:vitest"
   },
   "dependencies": {

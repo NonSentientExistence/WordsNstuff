@@ -1,15 +1,15 @@
 import { render, screen, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import Game from '../pages/Game'
+import Play from '../pages/Play'
 
-describe('Game', () => {
+describe('Play', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
-        status: 'InProgress',
+        status: 'playing',
         pool: ['T', 'A', 'N'],
         player1Hp: 100,
         player2Hp: 100,
@@ -25,9 +25,9 @@ describe('Game', () => {
 
   it('visar att spelet har startat', async () => {
     render(
-      <MemoryRouter initialEntries={['/game/ABC123']}>
+      <MemoryRouter initialEntries={['/play/ABC123']}>
         <Routes>
-          <Route path="/game/:code" element={<Game />} />
+          <Route path="/play/:code" element={<Play />} />
         </Routes>
       </MemoryRouter>
     )
