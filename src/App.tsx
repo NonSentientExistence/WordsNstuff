@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Lobby from './pages/Lobby'
-import Game from './pages/Game'
-import Finished from './pages/Finished'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Lobby from "./pages/Lobby";
+import Game from "./parts/Game";
+import Finished from "./pages/Finished";
 
 export default function App() {
   return (
@@ -14,5 +14,5 @@ export default function App() {
         <Route path="/game/:code/finished" element={<Finished />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
