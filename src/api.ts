@@ -56,11 +56,21 @@ export async function getGame(code: string) {
   return res.json()
 }
 
-export async function submitWord(code: string, word: string): Promise<boolean> {
+export async function submitWord(code: string, word: string): Promise<{ success: boolean, message: string, damage: number }> {
   const res = await fetch(`/api/games/${code}/submit`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({ word })
+  })
+  const message = res.ok ? '' : await res.text()
+  const damage = res.ok ? (await res.json()).damage : 0
+  return { success: res.ok, message, damage }
+}
+
+export async function resetLobby(code: string): Promise<boolean> {
+  const res = await fetch(`/api/lobbies/${code}/reset`, { 
+    method: 'POST', 
+    headers: headers() 
   })
   return res.ok
 }

@@ -1,10 +1,10 @@
-import { useGame } from "../hooks/useGame"
+import { useGame, type GameStats } from "../hooks/useGame"
 
 interface GameProps {
-  onEnd: () => void
+  onEnd: (stats: GameStats) => void
 }
 
-export default function Game({onEnd}: GameProps) {
+export default function Game({ onEnd }: GameProps) {
   const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit } = useGame(onEnd)
   
   return (
