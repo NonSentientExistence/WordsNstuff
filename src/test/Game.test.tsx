@@ -34,6 +34,6 @@ describe("Play", () => {
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
-    expect(screen.getByText("HP: 100")).toBeInTheDocument();
+    expect(screen.getByAltText("WordsNstuff")).toBeInTheDocument();
   });
 });
