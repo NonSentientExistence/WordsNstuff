@@ -16,20 +16,32 @@ var lobbyService = new LobbyService();
 app.MapGet("/api/hello", () => new { message = "Hello from .NET!" });
 app.MapGet("/api/greet/{name}", (string name) => new { message = greeter.Greet(name) });
 
-app.MapPost("/api/lobbies", (HttpRequest request) =>
+app.MapPost("/api/lobbies", async (HttpRequest request) =>
 {
     var token = request.Headers["X-Player-Token"].ToString();
     if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
-    var code = lobbyService.CreateLobby(token);
+    var body = await request.ReadFromJsonAsync<PlayerNameRequest>();
+    var code = lobbyService.CreateLobby(token, body?.Name);
     return Results.Ok(new { code });
 });
 
-app.MapPost("/api/lobbies/{code}/join", (string code, HttpRequest request) =>
+app.MapPost("/api/lobbies/{code}/join", async (string code, HttpRequest request) =>
 {
     var token = request.Headers["X-Player-Token"].ToString();
     if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
-    var joined = lobbyService.JoinLobby(code, token);
+    var body = await request.ReadFromJsonAsync<PlayerNameRequest>();
+    var joined = lobbyService.JoinLobby(code, token, body?.Name);
     return joined ? Results.Ok() : Results.BadRequest("Could not join lobby");
+});
+
+app.MapPost("/api/lobbies/{code}/name", async (string code, HttpRequest request) =>
+{
+    var token = request.Headers["X-Player-Token"].ToString();
+    if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
+    var body = await request.ReadFromJsonAsync<PlayerNameRequest>();
+    if (body is null || string.IsNullOrEmpty(body.Name)) return Results.BadRequest("Missing name");
+    var updated = lobbyService.UpdatePlayerName(code, token, body.Name);
+    return updated ? Results.Ok() : Results.BadRequest("Could not update name");
 });
 
 app.MapGet("/api/lobbies/{code}", (string code) =>
@@ -96,3 +108,4 @@ app.UseStaticFiles();
 app.Run();
 
 record SubmitWordRequest(string Word);
+record PlayerNameRequest(string? Name);
