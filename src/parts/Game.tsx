@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getGame, submitWord } from "../api";
 import { getPlayerToken } from "../playerToken";
 import PlayerHealthIcon from "../components/PlayerHealthIcon";
-import "../components/Game.css";
+import "../components/game.css";
 interface GameState {
   status: string;
   pool: string[];
