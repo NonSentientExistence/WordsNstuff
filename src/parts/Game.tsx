@@ -4,7 +4,6 @@ import { getGame, submitWord } from "../api";
 import { getPlayerToken } from "../playerToken";
 import PlayerHealthIcon from "../components/PlayerHealthIcon";
 import "../components/Game.css";
-
 interface GameState {
   status: string;
   pool: string[];
