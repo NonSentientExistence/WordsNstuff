@@ -1,6 +1,9 @@
 export default {
   method: 'POST',
-  url: '{{baseUrl}}/api/lobbies'
+  url: '{{baseUrl}}/api/lobbies',
+  body: {
+    name: 'Testspelaren'
+  }
 };
 
 export function preRequest() {
@@ -9,7 +12,13 @@ export function preRequest() {
 
 export function postResponse() {
   pm.test('Status code is 200', () => pm.response.to.have.status(200));
+
   const json = pm.response.json();
-  pm.test('Response has lobby code', () => pm.expect(json.code).to.be.a('string'));
+  pm.test('Response has lobby code', () =>
+    pm.expect(json.code).to.be.a('string')
+  );
+  pm.test('Lobby code is 6 characters', () =>
+    pm.expect(json.code).to.have.lengthOf(6)
+  );
   pm.variables.set('lobbyCode', json.code);
 }
