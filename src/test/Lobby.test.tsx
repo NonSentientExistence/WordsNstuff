@@ -1,13 +1,13 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import Lobby from '../pages/Lobby'
+import Play from '../pages/Play'
 
 function renderLobby() {
   return render(
-    <MemoryRouter initialEntries={['/lobby/XYZ789']}>
+    <MemoryRouter initialEntries={['/play/XYZ789']}>
       <Routes>
-        <Route path="/lobby/:code" element={<Lobby />} />
+        <Route path="/play/:code" element={<Play />} />
       </Routes>
     </MemoryRouter>
   )
@@ -33,8 +33,11 @@ describe('Lobby', () => {
   })
 
   it('visar väntar på motståndare', async () => {
+    vi.useFakeTimers()
     renderLobby()
-    expect(await screen.findByText(/Väntar på motståndare/)).toBeInTheDocument()
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    expect(screen.getByText(/Väntar på motståndare/)).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
   it('visar namn-popup när inget namn är satt', () => {

@@ -23,6 +23,10 @@ export async function joinLobby(code: string, name = 'Anonym'): Promise<boolean>
     headers: headers(),
     body: JSON.stringify({ name }),
   })
+  if (!res.ok) {
+    const error = await res.text()
+    console.error('joinLobby failed:', error)
+  }
   return res.ok
 }
 
