@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getGame, submitWord } from "../api";
 import { getPlayerToken } from "../playerToken";
 import PlayerHealthIcon from "../components/PlayerHealthIcon";
+import "../components/Game.css";
 
 interface GameState {
   status: string;
@@ -13,7 +14,11 @@ interface GameState {
   player2Id: string;
 }
 
-export default function Game() {
+interface GameProps {
+  onEnd?: () => void;
+}
+
+export default function Game({ onEnd }: GameProps) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [game, setGame] = useState<GameState | null>(null);
@@ -43,7 +48,7 @@ export default function Game() {
 
       if (data.status === "Finished") {
         clearInterval(intervalRef.current!);
-        navigate(`/game/${code}/finished`);
+        onEnd?.();
       }
     }, 1000);
 

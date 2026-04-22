@@ -4,18 +4,21 @@ import Lobby from "../parts/Lobby";
 import Game from "../parts/Game";
 import Finished from "../parts/Finished";
 
-type GameState = 'lobby' | 'game' | 'finished'
+type GameState = "lobby" | "game" | "finished";
 
 export default function Play() {
-    const [gameState, setGameState] = useState<GameState>('lobby')
+  const [gameState, setGameState] = useState<GameState>("lobby");
 
-    return (
-        <div>
-            <Header />
-            {gameState === 'lobby' && <Lobby onStart={() => setGameState('game')} />}
-            {gameState === 'game' && <Game onEnd={() => setGameState('finished')} />}
-            {gameState === 'finished' && <Finished onReplay={() => setGameState('lobby')} />}
-        </div>
-
-    )
+  return (
+    <div>
+      <Header />
+      {gameState === "lobby" && <Lobby onStart={() => setGameState("game")} />}
+      {gameState === "game" && (
+        <Game onEnd={() => setTimeout(() => setGameState("finished"), 1500)} />
+      )}
+      {gameState === "finished" && (
+        <Finished onReplay={() => setGameState("lobby")} />
+      )}
+    </div>
+  );
 }

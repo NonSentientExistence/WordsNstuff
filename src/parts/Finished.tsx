@@ -1,5 +1,5 @@
 interface FinsihedProps {
-    onReplay: () => void
+  onReplay: () => void;
 }
 
 export default function Finished({ onReplay }: FinsihedProps) {
@@ -7,7 +7,7 @@ export default function Finished({ onReplay }: FinsihedProps) {
     <div>
       <h1>Game Over!</h1>
       <p>The game has ended.</p>
-      <button onClick={() => onReplay}>Play Again</button>
+      <button onClick={onReplay}>Play Again</button>
     </div>
-  )
+  );
 }
