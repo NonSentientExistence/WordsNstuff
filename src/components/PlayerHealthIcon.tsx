@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import "./PlayerHealthIcon.css";
 
 interface PlayerHealthIconProps {
@@ -17,15 +17,10 @@ export default function PlayerHealthIcon({
   onDamageTaken,
 }: PlayerHealthIconProps) {
   const previousHpRef = useRef(hp);
-  const [triggerAnimation, setTriggerAnimation] = useState(false);
 
-  // Detektera skada och triggera callback + animation
   useEffect(() => {
     if (previousHpRef.current > hp) {
-      if (onDamageTaken) onDamageTaken();
-      setTriggerAnimation(true);
-      const timer = setTimeout(() => setTriggerAnimation(false), 400);
-      return () => clearTimeout(timer);
+      onDamageTaken?.();
     }
     previousHpRef.current = hp;
   }, [hp, onDamageTaken]);
@@ -47,11 +42,9 @@ export default function PlayerHealthIcon({
   return (
     <div
       className="player-health-icon"
-      style={{ "--size": `${size}px` } as any}
+      style={{ "--size": `${size}px` } as React.CSSProperties}
     >
-      <div
-        className={`head-container status-${status} ${triggerAnimation ? "damage-animation" : ""}`}
-      >
+      <div className={`head-container status-${status}`}>
         <div className="head">
           <div className="face" />
 
