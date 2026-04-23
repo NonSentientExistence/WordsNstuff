@@ -243,6 +243,14 @@ public class GameEngineTests
     }
 
     [Fact]
+    public void SubmitWord_UnknownPlayerId_ReturnInvalidPlayer()
+    {
+        var (engine, _) = CreateGame();
+        var result = engine.SubmitWord("unknown-player", "CAT");
+        Assert.Equal(SubmitResult.InvalidPlayer, result);
+    }
+
+    [Fact]
     public void SubmitWord_NotInLetterPool_ReturnInvalidPool()
     {
         var (engine, game) = CreateGame();

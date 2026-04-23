@@ -62,6 +62,14 @@ public class GameServiceTests
     Assert.Null(exception);
     }
 
+    // Ensure GameNotFound is returned when game doesn't exist
+    [Fact]
+    public void SubmitWord_ReturnsGameNotFound_WhenGameDoesNotExist()
+    {
+        var result = _service.SubmitWord("DOESNTEXIST", "player1", "cat");
+        Assert.Equal(SubmitResult.GameNotFound, result);
+    }
+
     // Ensure skipping a word stores empty string for the player
     [Fact]
     public void SkipWord_StoresEmptyStringForPlayer()

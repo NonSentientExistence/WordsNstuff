@@ -104,6 +104,8 @@ app.MapPost("/api/games/{code}/submit", async (string code, HttpRequest request,
         SubmitResult.Success => Results.Ok(new { damage = WordValue.Calculate(body.Word) }),
         SubmitResult.InvalidWord => Results.BadRequest("Word is not in the dictionary"),
         SubmitResult.InvalidPool => Results.BadRequest("Letters are not available in the pool"),
+        SubmitResult.GameNotFound => Results.NotFound("Game not found"),
+        SubmitResult.InvalidPlayer => Results.BadRequest("Player does not belong to this game"),
         _ => Results.BadRequest("Invalid word")
     };
 });
