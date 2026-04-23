@@ -13,24 +13,24 @@ export default function Game({ onEnd }: GameProps) {
 
   return (
     <div>
-      <h1>WordsNstuff</h1>
+<h1>1v1 Battle To Death</h1>
 
       <div className="health-display">
         <div className="player-section">
-          <h2>You</h2>
+          <h2 style={{ color: "#025BD6"}}>You</h2>
           <PlayerHealthIcon hp={myHp ?? 0} maxHp={100} size={80} showLabel={true} />
-          <p>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>-${opponentLastDamage}-dmg--|>` : ''}</p>
+          <p style={{ color: "#025BD6"}}>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>--${opponentLastDamage}-dmg--|>` : ''}</p>
         </div>
 
         <div className="player-section">
-          <h2>Opponent</h2>
+          <h2 style={{ color: "#F87402"}}>Opponent</h2>
           <PlayerHealthIcon
             hp={opponentHp ?? 0}
             maxHp={100}
             size={80}
             showLabel={true}
           />
-          <p>Opponents word: {opponentLastWord ?? '—'} {myLastDamage ? `>>--${myLastDamage}-dmg--|>` : ''}</p>
+          <p style={{ color: "#F87402"}}>Opponents word: {opponentLastWord ?? '—'} {myLastDamage ? `>>--${myLastDamage}-dmg--|>` : ''}</p>
         </div>
       </div>
 
