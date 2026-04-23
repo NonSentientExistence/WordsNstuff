@@ -46,6 +46,11 @@ public class GameEngine
         _state.Player1.TakeDamage(damage2); // player1 takes damage from player2's word and vice versa
         _state.Player2.TakeDamage(damage1); 
 
+        _state.Player1LastWord = _state.Player1Word;
+        _state.Player2LastWord = _state.Player2Word;
+        
+        _state.Player1LastDamage = damage2.ToString();
+        _state.Player2LastDamage = damage1.ToString();
         // Set word to null for next round
         _state.Player1Word = null;
         _state.Player2Word = null;
