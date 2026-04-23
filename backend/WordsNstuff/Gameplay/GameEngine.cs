@@ -26,7 +26,7 @@ public class GameEngine
                 _state.Player1Word = word.ToUpper();
             else if (playerId == _state.Player2.Id)
                 _state.Player2Word = word.ToUpper();
-            else return SubmitResult.InvalidWord;
+            else return SubmitResult.InvalidPlayer;
             // Only resolve round when both players have submitted
             if (_state.Player1Word != null && _state.Player2Word != null)
                 ResolveRoundInternal();
