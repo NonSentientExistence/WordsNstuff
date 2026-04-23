@@ -62,6 +62,8 @@ app.MapPost("/api/lobbies/{code}/start", (string code, HttpRequest request, Game
     var started = lobbyService.StartGame(code, token);
     if (!started) return Results.BadRequest("Could not start game");
 
+    //Removes old game if it exists, then create new game
+    gameService.RemoveGame(code);
     gameService.StartGame(code, player1Token, player2Token);
     return Results.Ok();
 });
@@ -95,8 +97,14 @@ app.MapPost("/api/games/{code}/submit", async (string code, HttpRequest request,
     if (body is null || string.IsNullOrEmpty(body.Word))
         return Results.BadRequest("Missing word");
 
-    var accepted = gameService.SubmitWord(code, token, body.Word);
-    return accepted ? Results.Ok() : Results.BadRequest("Invalid word");
+    var result = gameService.SubmitWord(code, token, body.Word);
+    return result switch
+    {
+        SubmitResult.Success => Results.Ok(new { damage = WordValue.Calculate(body.Word) }),
+        SubmitResult.InvalidWord => Results.BadRequest("Word is not in the dictionary"),
+        SubmitResult.InvalidPool => Results.BadRequest("Letters are not available in the pool"),
+        _ => Results.BadRequest("Invalid word")
+    };
 });
 
 // Test only, sets a known letter pool for API tests.
@@ -104,6 +112,13 @@ app.MapPost("/api/games/{code}/set-pool-test", (string code, GameService gameSer
 {
     gameService.SetPoolForTesting(code, new[] { 'A','T','N','E','R','S','I','O','L','D','A','T','N','E','R','S','I','O','L','D' });
     return Results.Ok();
+});
+
+//Reset lobby API endpoint
+app.MapPost("/api/lobbies/{code}/reset", (string code) =>
+{
+    var reset = lobbyService.ResetLobby(code);
+    return reset ? Results.Ok() : Results.BadRequest("Could not reset lobby");
 });
 
 app.UseDefaultFiles();

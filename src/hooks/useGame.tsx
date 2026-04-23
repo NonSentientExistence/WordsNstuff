@@ -16,54 +16,77 @@ interface GameState {
   player2LastDamage: number
 }
 
-export function useGame(onEnd: () => void) {
+export interface GameStats {
+  rounds: number
+  damageDealt: number
+  won: boolean
+  playerName: string
+  code: string
+}
+
+export function useGame(onEnd: (stats: GameStats) => void) {
     const { code } = useParams<{ code: string }>()
     const [game, setGame] = useState<GameState | null>(null)
     const [word, setWord] = useState('')
     const [submitted, setSubmitted] = useState(false)
     const [message, setMessage] = useState('')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const roundsRef = useRef(0)
+    const damageDealtRef = useRef(0)
+    const token = getPlayerToken()
+    const playerName = sessionStorage.getItem('playerName') || 'You'
     
-  
 
-  // Poll game state every second, reset submitted state when a new round starts
-  useEffect(() => 
-  {
+  // Reset stats on mount to handle Play Again correctly
+  useEffect(() => {
+    roundsRef.current = 0
+    damageDealtRef.current = 0
+  }, [])
+
+  // Poll game state every second
+  useEffect(() => {
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
 
-      // Reset submitted when HP changes
+      // Reset submitted state when HP changes and increase round count
       setGame(prev => {
         if (prev && (prev.player1Hp !== data.player1Hp || prev.player2Hp !== data.player2Hp)) {
           setSubmitted(false)
+          roundsRef.current += 1
         }
         return data
       })
 
+      // Game is over, pass final stats
       if (data.status === 'Finished') {
         clearInterval(intervalRef.current!)
-        onEnd()
+        const myHp = data.player1Id === token ? data.player1Hp : data.player2Hp
+        onEnd({
+          rounds: roundsRef.current,
+          damageDealt: damageDealtRef.current,
+          won: myHp > 0,
+          playerName,
+          code: code!
+        })
       }
     }, 1000)
-
     return () => clearInterval(intervalRef.current!)
   }, [code, onEnd])
 
 
-  const handleSubmit = async () => 
-  {
+  const handleSubmit = async () => {
     if (!code || !word.trim() || submitted) return
-
-    const success = await submitWord(code, word.trim())
+    const { success, message:msg, damage } = await submitWord(code, word.trim())
     if (success) {
       setSubmitted(true)
       setMessage('Word submitted! Nice one!')
+      damageDealtRef.current += damage
       setWord('')
       setTimeout(() => setMessage(''), 3000)
     } else {
-      setMessage('Invalid word, try again!')
+      setMessage(msg)  // Returned reason from backend
     }
   }
 

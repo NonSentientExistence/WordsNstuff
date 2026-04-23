@@ -10,28 +10,30 @@ public class GameEngine
         _validator = validator;
     }
 
-    public bool SubmitWord(string playerId, string word)
+    public SubmitResult SubmitWord(string playerId, string word)
     {
         //Reject if word isn't in the dictionary 
-        if (!_validator.IsValid(word)) return false;
+        if (!_validator.IsValid(word)) return SubmitResult.InvalidWord;
 
         // Check that all letters in the word exist in the pool
-    var pool = new List<char>(_state.Pool); // copy so we don't modify the original
-    foreach (var letter in word.ToUpper())
+        // pool is a copy of the current pool to ensure we don't modify the current word pool
+        var pool = new List<char>(_state.Pool);
+        foreach (var letter in word.ToUpper())
     {
-        if (!pool.Remove(letter)) return false; // letter not in pool
+        if (!pool.Remove(letter)) return SubmitResult.InvalidPool; // letter not in pool
     }
         // Store the submitted word to the correct player
         if (playerId == _state.Player1.Id)
             _state.Player1Word = word.ToUpper();
         else if (playerId == _state.Player2.Id)
             _state.Player2Word = word.ToUpper();
-        else return false;
+        else return SubmitResult.InvalidWord;
+
         // Only resolve round when both players have submitted
         if (_state.Player1Word != null && _state.Player2Word != null)
             ResolveRound();
 
-        return true;
+        return SubmitResult.Success;
     }
 
     private void ResolveRound()
@@ -56,6 +58,10 @@ public class GameEngine
         // Check if the game has ended
         if (IsOver())
             _state.Status = GameStatus.Finished;
+
+        // Generates a new pool of letters for each new round
+        _state.Pool.Clear();
+        _state.Pool.AddRange(LetterPool.Generate(20));    
     }
 
     public bool IsOver()
