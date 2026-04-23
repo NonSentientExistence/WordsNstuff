@@ -243,7 +243,7 @@ public class GameEngineTests
     }
 
     [Fact]
-    public void SubmitWord_NotInLetterPool_ReturnInvalidWord()
+    public void SubmitWord_NotInLetterPool_ReturnInvalidPool()
     {
         var (engine, game) = CreateGame();
         // Override pool with known letters
