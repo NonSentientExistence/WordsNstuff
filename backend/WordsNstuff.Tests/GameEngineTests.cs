@@ -62,6 +62,66 @@ public class GameEngineTests
         Assert.Equal(95, game.Player2.Hp);
     }
 
+    // Ensure last words are saved for both players after a round resolves
+    [Fact]
+    public void ResolveRound_StoresLastWordForBothPlayers()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT");
+        engine.SubmitWord("player2", "DOG");
+
+        Assert.Equal("CAT", game.Player1LastWord);
+        Assert.Equal("DOG", game.Player2LastWord);
+    }
+
+    // Ensure last words are overwritten with the most recent round's words
+    [Fact]
+    public void ResolveRound_LastWordUpdatesEachRound()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT");
+        engine.SubmitWord("player2", "DOG");
+
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
+
+        engine.SubmitWord("player1", "WORD");
+        engine.SubmitWord("player2", "PLAY");
+
+        Assert.Equal("WORD", game.Player1LastWord);
+        Assert.Equal("PLAY", game.Player2LastWord);
+    }
+
+    // Ensure damage dealt is stored for both players after a round resolves
+    [Fact]
+    public void ResolveRound_StoresLastDamageForBothPlayers()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // CAT = 5 dmg
+        engine.SubmitWord("player2", "DOG"); // DOG = 5 dmg
+
+        Assert.Equal("5", game.Player1LastDamage); // player1 takes damage from DOG
+        Assert.Equal("5", game.Player2LastDamage); // player2 takes damage from CAT
+    }
+
+    // Ensure last damage is overwritten with the most recent round's damage
+    [Fact]
+    public void ResolveRound_LastDamageUpdatesEachRound()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // 5 dmg
+        engine.SubmitWord("player2", "DOG"); // 5 dmg
+
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
+
+        engine.SubmitWord("player1", "WORD"); // W(4)+O(1)+R(1)+D(2) = 8 dmg
+        engine.SubmitWord("player2", "PLAY"); // P(3)+L(1)+A(1)+Y(4) = 9 dmg
+
+        Assert.Equal("9", game.Player1LastDamage); // player1 takes damage from PLAY
+        Assert.Equal("8", game.Player2LastDamage); // player2 takes damage from WORD
+    }
+
     //Ensure word submits are empty when starting a new round
     [Fact]
     public void ResolveRound_ClearsWordsAfterRound()

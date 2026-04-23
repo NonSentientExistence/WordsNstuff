@@ -1,24 +1,25 @@
-import { render, screen, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import Play from '../pages/Play'
+import { render, screen, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import Play from "../pages/Play";
+import Game from "../parts/Game";
 
-describe('Play', () => {
+describe("Play", () => {
   beforeEach(() => {
     vi.useFakeTimers()
     sessionStorage.setItem('playerName', 'Testspelaren')
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
-        status: 'playing',
-        pool: ['T', 'A', 'N'],
+        status: "playing",
+        pool: ["T", "A", "N"],
         player1Hp: 100,
         player2Hp: 100,
-        player1Id: 'token-1',
-        player2Id: 'token-2'
-      })
-    } as Response)
-  })
+        player1Id: "token-1",
+        player2Id: "token-2",
+      }),
+    } as Response);
+  });
 
   afterEach(() => {
     vi.useRealTimers()
@@ -26,18 +27,32 @@ describe('Play', () => {
     sessionStorage.clear()
   })
 
-  it('visar att spelet har startat', async () => {
+  it('shows last word labels', async () => {
     render(
       <MemoryRouter initialEntries={['/play/ABC123']}>
         <Routes>
-          <Route path="/play/:code" element={<Play />} />
+          <Route path="/play/:code" element={<Game onEnd={() => {}} />} />
         </Routes>
       </MemoryRouter>
     )
     await act(async () => { vi.advanceTimersByTime(1000) })
-    expect(screen.getByText('WordsNstuff')).toBeInTheDocument()
+    expect(screen.getByText(/Your word:/)).toBeInTheDocument()
+    expect(screen.getByText(/Opponents word:/)).toBeInTheDocument()
   })
 
+  it("visar att spelet har startat", async () => {
+    render(
+      <MemoryRouter initialEntries={["/play/ABC123"]}>
+        <Routes>
+          <Route path="/play/:code" element={<Play />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByAltText("WordsNstuff")).toBeInTheDocument();
+  });
 
   it('visar en nedräkning när spelet är igång', async () => {
     render(
@@ -47,9 +62,9 @@ describe('Play', () => {
         </Routes>
       </MemoryRouter>
     )
-    //Advance through lobby poll to start game
+    // Advance through lobby poll to start game
     await act(async () => { vi.advanceTimersByTime(1000) })
-    //Advance through game poll to display the timer
+    // Advance through game poll to display the timer
     await act(async () => { vi.advanceTimersByTime(1000) })
     expect(screen.getByText(/sekunder/)).toBeInTheDocument()
   })
