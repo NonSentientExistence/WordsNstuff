@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { getGame, submitWord } from '../api'
+import { getGame, getLobby, submitWord } from '../api'
 import { getPlayerToken } from '../playerToken'
 
 interface GameState {
@@ -35,9 +35,9 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     const damageDealtRef = useRef(0)
     const token = getPlayerToken()
     const playerName = sessionStorage.getItem('playerName') || 'You'
-    
+    const [opponentName, setOpponentName] = useState('Opponent')
+    const namesFetchedRef = useRef(false)
 
-  // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
     roundsRef.current = 0
     damageDealtRef.current = 0
@@ -49,6 +49,17 @@ export function useGame(onEnd: (stats: GameStats) => void) {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
+
+      // Fetch opponent name once we know which player slot we occupy
+      if (!namesFetchedRef.current) {
+        namesFetchedRef.current = true
+        getLobby(code).then((lobby) => {
+          if (!lobby) return
+          const isPlayer1 = data.player1Id === token
+          const opp = isPlayer1 ? lobby.player2Name : lobby.player1Name
+          if (opp) setOpponentName(opp)
+        })
+      }
 
       // Reset submitted state when HP changes and increase round count
       setGame(prev => {
@@ -99,5 +110,5 @@ export function useGame(onEnd: (stats: GameStats) => void) {
   const myLastDamage = game?.player1Id === token ? game?.player1LastDamage : game?.player2LastDamage
   const opponentLastDamage = game?.player1Id === token ? game?.player2LastDamage : game?.player1LastDamage
 
-  return {game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage }
+  return {game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage, playerName, opponentName}
 }

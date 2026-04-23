@@ -8,7 +8,7 @@ export default function Lobby({ onStart }: LobbyProps) {
   const { code, link, playerCount, status, handleStart, playerName, nameInput, setNameInput, handleSubmitName } = useLobby(onStart)
 
   return (
-    <div>
+    <div className="page-wrapper">
       {!playerName && (
         <div className="popup-overlay">
           <div className="popup-box">
@@ -25,14 +25,19 @@ export default function Lobby({ onStart }: LobbyProps) {
           </div>
         </div>
       )}
-      <h1>Lobby: {code}</h1>
-      <p>Dela denna länk: <strong>{link}</strong></p>
-      <p>Spelare: {playerCount}/2</p>
-      {playerCount === null && <p>Laddar...</p>}
-      {playerCount !== null && playerCount < 2 && <p>Väntar på motståndare...</p>}
-      {playerCount === 2 && status === 'ready' && playerName && (
-        <button onClick={handleStart}>Starta spel</button>
-      )}
+      <div className="card">
+        <h1>Lobby</h1>
+        <span className="lobby-code">{code}</span>
+        <div className="lobby-info">
+          <p>Dela denna länk: <strong>{link}</strong></p>
+          <p>Spelare: {playerCount}/2</p>
+          {playerCount === null && <p>Laddar...</p>}
+          {playerCount !== null && playerCount < 2 && <p>Väntar på motståndare...</p>}
+        </div>
+        {playerCount === 2 && status === 'ready' && playerName && (
+          <button onClick={handleStart}>Starta spel</button>
+        )}
+      </div>
     </div>
   )
 }

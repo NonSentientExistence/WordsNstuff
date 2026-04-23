@@ -1,17 +1,32 @@
+/* ===== Game Screen ===== */
 .game-container {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 20px;
-  text-align: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-container h1 {
+  font-size: 28px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  margin-bottom: 4px;
 }
 
 .health-display {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  gap: 60px;
-  margin: 30px 0;
+  align-items: flex-start;
+  gap: 48px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
@@ -19,23 +34,44 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px 28px;
+  min-width: 180px;
+  box-shadow: var(--shadow);
+}
+
+.player-section h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .player-section p {
   margin: 0;
-  font-size: 18px;
-  font-weight: bold;
-  color: #374151;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .letter-pool {
-  margin: 30px 0;
+  width: 100%;
+  max-width: 640px;
+  margin: 8px 0;
 }
 
 .letter-pool h2 {
-  margin-bottom: 15px;
-  color: #1f2937;
+  margin-bottom: 14px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .pool-letters {
@@ -43,23 +79,23 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  max-width: 600px;
-  margin: 0 auto;
 }
 
 .pool-letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   font-size: 20px;
-  font-weight: bold;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: letter-appear 0.5s ease-out backwards;
+  font-weight: 800;
+  background: linear-gradient(145deg, rgba(59, 170, 255, 0.18), rgba(2, 91, 214, 0.12));
+  border: 2px solid rgba(59, 170, 255, 0.3);
+  border-radius: 10px;
+  color: var(--text-h);
+  box-shadow: 0 2px 8px rgba(2, 91, 214, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: letter-appear 0.4s ease-out backwards;
+  user-select: none;
 }
 
 @keyframes letter-appear {
@@ -67,7 +103,6 @@
     opacity: 0;
     transform: scale(0.5) translateY(-10px);
   }
-
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -75,64 +110,38 @@
 }
 
 .word-input {
-  margin: 30px 0;
   display: flex;
   gap: 10px;
   justify-content: center;
   align-items: center;
+  margin: 8px 0;
 }
 
 .word-input input {
-  padding: 12px 20px;
-  font-size: 18px;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  width: 200px;
+  width: 250px;
   text-transform: uppercase;
-  transition: border-color 0.2s;
-}
-
-.word-input input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.word-input button {
-  padding: 12px 24px;
-  font-size: 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.word-input button:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-.word-input button:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-align: center;
 }
 
 .word-input button.submitting {
-  background: #f59e0b;
+  background: linear-gradient(135deg, var(--accent-light), var(--accent));
+  border-color: rgba(255, 183, 43, 0.5);
 }
 
 .message {
-  margin-top: 20px;
-  font-size: 16px;
-  font-weight: bold;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 22px;
 }
 
 .message.info {
-  color: #059669;
+  color: #4ade80;
 }
 
 .message.error {
-  color: #dc2626;
+  color: #f87171;
 }
