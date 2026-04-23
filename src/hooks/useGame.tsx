@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { getGame, submitWord, skipRound } from '../api'
+import { getGame, getLobby, submitWord, skipRound } from '../api'
 import { getPlayerToken } from '../playerToken'
 
 interface GameState {
@@ -32,24 +32,25 @@ export function useGame(onEnd: (stats: GameStats) => void) {
   const [submitted, setSubmitted] = useState(false)
   const [message, setMessage] = useState('')
   const [timeLeft, setTimeLeft] = useState(30)
+  const [opponentName, setOpponentName] = useState('Opponent')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const roundsRef = useRef(0)
   const damageDealtRef = useRef(0)
   const submittedAtRef = useRef<number | null>(null)
   const wordRef = useRef('')
+  const namesFetchedRef = useRef(false)
+  const token = getPlayerToken()
+  const playerName = sessionStorage.getItem('playerName') || 'You'
 
-  // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
     roundsRef.current = 0
     damageDealtRef.current = 0
   }, [])
 
-  // Keep wordRef in sync with word state
   useEffect(() => {
     wordRef.current = word
   }, [word])
 
-  // Bypass submitted check so timer can always submit if a word is typed
   const doSubmit = useCallback(async (currentWord: string) => {
     if (!code || !currentWord.trim()) return
     const { success, message: msg, damage } = await submitWord(code, currentWord.trim())
@@ -65,14 +66,14 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     }
   }, [code])
 
-  // Countdown timer, resets each round and auto submits or skips if runs out
+  // Countdown timer — auto-submits or skips when it hits 0
   useEffect(() => {
     if (submitted) return
 
     let count = 30
 
     const timer = setInterval(() => {
-      setTimeLeft(count) // ← set display on every tick, including first
+      setTimeLeft(count)
       count -= 1
       if (count < 0) {
         clearInterval(timer)
@@ -91,12 +92,22 @@ export function useGame(onEnd: (stats: GameStats) => void) {
 
   // Poll game state every second
   useEffect(() => {
-    const token = getPlayerToken()
-    const playerName = sessionStorage.getItem('playerName') || 'You'
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
+
+      // Fetch opponent name once we know which player slot we occupy
+      if (!namesFetchedRef.current) {
+        namesFetchedRef.current = true
+        getLobby(code).then((lobby) => {
+          if (!lobby) return
+          const isPlayer1 = data.player1Id === token
+          const opp = isPlayer1 ? lobby.player2Name : lobby.player1Name
+          if (opp) setOpponentName(opp)
+        })
+      }
+
       // Reset submitted state and increment round counter when a new round starts
       setGame(prev => {
         if (prev && prev.roundNumber !== data.roundNumber) {
@@ -128,18 +139,14 @@ export function useGame(onEnd: (stats: GameStats) => void) {
       }
     }, 1000)
 
-    return () => {
-      clearInterval(intervalRef.current!)
-    }
+    return () => clearInterval(intervalRef.current!)
   }, [code, onEnd])
 
-  // Calls doSubmit
   const handleSubmit = async () => {
     if (!code || !word.trim() || submitted) return
     await doSubmit(word)
   }
 
-  const token = getPlayerToken()
   const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
   const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
   const myLastWord = game?.player1Id === token ? game?.player1LastWord : game?.player2LastWord
@@ -147,5 +154,5 @@ export function useGame(onEnd: (stats: GameStats) => void) {
   const myLastDamage = game?.player1Id === token ? game?.player1LastDamage : game?.player2LastDamage
   const opponentLastDamage = game?.player1Id === token ? game?.player2LastDamage : game?.player1LastDamage
 
-  return { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, timeLeft, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage }
+  return { game, word, setWord, submitted, message, timeLeft, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage, playerName, opponentName }
 }

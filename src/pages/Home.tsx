@@ -8,7 +8,8 @@ export default function Home() {
   const [joinCode, setJoinCode] = useState('')
 
   const handleCreate = async () => {
-    const code = await createLobby()
+    const existingName = sessionStorage.getItem('playerName') ?? undefined
+    const code = await createLobby(existingName)
     navigate(`/play/${code}`)
   }
 
@@ -20,16 +21,20 @@ export default function Home() {
 
   return (
     <div>
-      <Header title='WordsNstuff' subtitle= 'Arenan där två spelare möts i ordstrider — bygg starka ord, krossa motståndaren.'/>
-      <button onClick={handleCreate}>Skapa lobby</button>
-      <h2>Eller gå med i en lobby</h2>
-      <input
-        type="text"
-        placeholder="Skriv in lobbykod"
-        value={joinCode}
-        onChange={(e) => setJoinCode(e.target.value)}
-      />
-      <button onClick={handleJoin}>Gå med</button>
+      <Header title='WordsNstuff' subtitle='Arenan där två spelare möts i ordstrider — bygg starka ord, krossa motståndaren.' />
+      <div className="page-wrapper">
+        <div className="card">
+          <button onClick={handleCreate}>Skapa lobby</button>
+          <h2>Eller gå med i en lobby</h2>
+          <input
+            type="text"
+            placeholder="Skriv in lobbykod"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value)}
+          />
+          <button onClick={handleJoin}>Gå med</button>
+        </div>
+      </div>
     </div>
   )
 }

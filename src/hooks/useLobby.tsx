@@ -20,8 +20,8 @@ export function useLobby(onStart: () => void) {
         if (code) {
             if (!hasJoined.current) {
                 hasJoined.current = true
-                joinLobby(code, name).then(joined => {
-                    if (!joined) updateLobbyName(code, name)
+                joinLobby(code, name).then(() => {
+                    updateLobbyName(code, name)
                 })
             } else {
                 updateLobbyName(code, name)
@@ -33,8 +33,8 @@ export function useLobby(onStart: () => void) {
     {
         if (!hasJoined.current && code && playerName) {
             hasJoined.current = true
-            joinLobby(code, playerName).then(joined => {
-                if (!joined) updateLobbyName(code, playerName)
+            joinLobby(code, playerName).then(() => {
+                updateLobbyName(code, playerName)
             })
         }
     }, [code, playerName])
