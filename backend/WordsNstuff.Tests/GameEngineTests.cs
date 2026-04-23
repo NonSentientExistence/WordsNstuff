@@ -100,8 +100,8 @@ public class GameEngineTests
         engine.SubmitWord("player1", "CAT"); // CAT = 5 dmg
         engine.SubmitWord("player2", "DOG"); // DOG = 5 dmg
 
-        Assert.Equal("5", game.Player1LastDamage); // player1 takes damage from DOG
-        Assert.Equal("5", game.Player2LastDamage); // player2 takes damage from CAT
+        Assert.Equal(5, game.Player1LastDamage); // player1 takes damage from DOG
+        Assert.Equal(5, game.Player2LastDamage); // player2 takes damage from CAT
     }
 
     // Ensure last damage is overwritten with the most recent round's damage
@@ -118,8 +118,8 @@ public class GameEngineTests
         engine.SubmitWord("player1", "WORD"); // W(4)+O(1)+R(1)+D(2) = 8 dmg
         engine.SubmitWord("player2", "PLAY"); // P(3)+L(1)+A(1)+Y(4) = 9 dmg
 
-        Assert.Equal("9", game.Player1LastDamage); // player1 takes damage from PLAY
-        Assert.Equal("8", game.Player2LastDamage); // player2 takes damage from WORD
+        Assert.Equal(9, game.Player1LastDamage); // player1 takes damage from PLAY
+        Assert.Equal(8, game.Player2LastDamage); // player2 takes damage from WORD
     }
 
     //Ensure word submits are empty when starting a new round

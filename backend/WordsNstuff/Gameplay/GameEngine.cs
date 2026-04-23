@@ -61,8 +61,8 @@ public class GameEngine
         _state.Player2.TakeDamage(damage1);
         _state.Player1LastWord = _state.Player1Word;
         _state.Player2LastWord = _state.Player2Word;
-        _state.Player1LastDamage = damage2.ToString();
-        _state.Player2LastDamage = damage1.ToString();
+        _state.Player1LastDamage = damage2;
+        _state.Player2LastDamage = damage1;
         _state.Player1Word = null;
         _state.Player2Word = null;
         _state.RoundNumber++;

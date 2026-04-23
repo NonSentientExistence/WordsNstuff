@@ -62,9 +62,12 @@ export async function submitWord(code: string, word: string): Promise<{ success:
     headers: headers(),
     body: JSON.stringify({ word })
   })
-  const message = res.ok ? '' : await res.text()
-  const damage = res.ok ? (await res.json()).damage : 0
-  return { success: res.ok, message, damage }
+  if (res.ok) {
+    const data = await res.json()
+    return { success: true, message: '', damage: data.damage ?? 0 }
+  }
+  const message = await res.text().catch(() => 'Unknown error')
+  return { success: false, message, damage: 0 }
 }
 
 export async function skipRound(code: string): Promise<void> {
