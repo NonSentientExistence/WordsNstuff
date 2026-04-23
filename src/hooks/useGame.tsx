@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { getGame, submitWord, skipRound } from '../api'
 import { getPlayerToken } from '../playerToken'
@@ -50,7 +50,7 @@ export function useGame(onEnd: (stats: GameStats) => void) {
   }, [word])
 
   // Bypass submitted check so timer can always submit if a word is typed
-  const doSubmit = async (currentWord: string) => {
+  const doSubmit = useCallback(async (currentWord: string) => {
     if (!code || !currentWord.trim()) return
     const { success, message: msg, damage } = await submitWord(code, currentWord.trim())
     if (success) {
@@ -58,43 +58,36 @@ export function useGame(onEnd: (stats: GameStats) => void) {
       setMessage('Word submitted! Waiting for opponent...')
       damageDealtRef.current += damage
       setWord('')
-      wordRef.current = '' // ← clear ref too
+      wordRef.current = ''
       submittedAtRef.current = Date.now()
     } else {
       setMessage(msg)
     }
-  }
+  }, [code])
 
   // Countdown timer, resets each round and auto submits or skips if runs out
   useEffect(() => {
-    setTimeLeft(30)
     if (submitted) return
 
+    let count = 30
+
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          return 0
+      setTimeLeft(count) // ← set display on every tick, including first
+      count -= 1
+      if (count < 0) {
+        clearInterval(timer)
+        if (wordRef.current.trim()) {
+          doSubmit(wordRef.current)
+          setWord('')
+        } else {
+          skipRound(code!)
+          setSubmitted(true)
         }
-        return prev - 1
-      })
+      }
     }, 1000)
 
-    const submitTimeout = setTimeout(() => {
-      if (wordRef.current.trim()) {
-        doSubmit(wordRef.current)
-        setWord('')
-      } else {
-        skipRound(code!)
-        setSubmitted(true)
-      }
-    }, 30000)
-
-    return () => {
-      clearInterval(timer)
-      clearTimeout(submitTimeout)
-    }
-  }, [submitted])
+    return () => clearInterval(timer)
+  }, [submitted, code, doSubmit])
 
   // Poll game state every second
   useEffect(() => {
