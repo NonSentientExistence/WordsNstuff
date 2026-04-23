@@ -86,4 +86,30 @@ describe('Lobby', () => {
     expect(screen.getByText('Starta spel')).toBeInTheDocument()
     vi.useRealTimers()
   })
+
+  it('kraschar inte och visar lobby när API svarar med fel (500)', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      json: async () => { throw new Error('Server error') },
+    } as unknown as Response)
+    renderLobby()
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    // Appen ska inte krascha – lobbykoden visas fortfarande
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('visar laddnings-text när lobby-API svarar med fel', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      json: async () => null,
+    } as unknown as Response)
+    renderLobby()
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    // Lobbyn visar "Laddar..." när data inte kan hämtas
+    expect(screen.getByText(/Laddar\.\.\./)).toBeInTheDocument()
+    vi.useRealTimers()
+  })
 })

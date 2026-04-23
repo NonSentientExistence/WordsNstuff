@@ -9,4 +9,9 @@ export function preRequest() {
 }
 export function postResponse() {
   pm.test('Status code is 200', () => pm.response.to.have.status(200));
+  pm.test('Response contains damage as number', () => {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property('damage');
+    pm.expect(json.damage).to.be.a('number');
+  });
 }
