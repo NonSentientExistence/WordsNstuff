@@ -26,8 +26,7 @@ export default function Lobby({ onStart }: LobbyProps) {
         </div>
       )}
       <div className="card">
-        <h1>Lobby</h1>
-        <span className="lobby-code">{code}</span>
+        <h1>Lobby: <span className="lobby-code">{code}</span></h1>
         <div className="lobby-info">
           <p>Dela denna länk: <strong>{link}</strong></p>
           <p>Spelare: {playerCount}/2</p>
