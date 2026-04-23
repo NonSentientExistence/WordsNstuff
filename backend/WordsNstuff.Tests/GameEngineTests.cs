@@ -142,8 +142,55 @@ public class GameEngineTests
         // Override pool with known letters
         game.Pool.Clear();
         game.Pool.AddRange(new[] { 'C', 'A', 'T' });
-        // DOG needs D, O, G — none of which are in the pool
+        // Test with dog which doesn't have the needed letters in the pool
         var result = engine.SubmitWord("player1", "dog");
-        Assert.False(result);
+        Assert.Equal(SubmitResult.InvalidPool, result);
+    }
+
+    [Fact]
+    public void NewRound_NewLetterPoolGenerated()
+    {
+        var (engine, game) = CreateGame();
+        var pool1 = new List<char>(game.Pool);
+        engine.SubmitWord("player1", "CAT");
+        engine.SubmitWord("player2", "DOG");
+        var pool2 = game.Pool;
+
+        Assert.NotEqual(pool1, pool2);
+    }
+     [Fact]
+    public void SubmitWord_ValidWord_ReturnSuccess()
+    {
+        var (engine, game) = CreateGame();
+        // Override pool with known letters
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'C', 'A', 'T' });
+        
+        var result = engine.SubmitWord("player1", "cat");
+        Assert.Equal(SubmitResult.Success, result);
+    }
+
+    [Fact]
+    public void SubmitWord_NotInDictionary_ReturnInvalidWord()
+    {
+        var (engine, game) = CreateGame();
+        // Override pool with known letters
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'B', 'Q', 'R' });
+        
+        var result = engine.SubmitWord("player1", "bqr");
+        Assert.Equal(SubmitResult.InvalidWord, result);
+    }
+
+    [Fact]
+    public void SubmitWord_NotInLetterPool_ReturnInvalidWord()
+    {
+        var (engine, game) = CreateGame();
+        // Override pool with known letters
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'B', 'Q', 'R' });
+        
+        var result = engine.SubmitWord("player1", "cat");
+        Assert.Equal(SubmitResult.InvalidPool, result);
     }
 }

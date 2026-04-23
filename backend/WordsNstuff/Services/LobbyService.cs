@@ -102,4 +102,15 @@ public class LobbyService
         cmd.Parameters.AddWithValue("@token", playerToken);
         return cmd.ExecuteNonQuery() > 0;
     }
+    public bool ResetLobby(string code)
+    {
+        using var connection = Database.GetConnection();
+        var cmd = connection.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE Lobbies 
+            SET Status = 'waiting', Player2Token = NULL
+            WHERE Code = @code";
+        cmd.Parameters.AddWithValue("@code", code);
+        return cmd.ExecuteNonQuery() > 0;
+    }
 }
