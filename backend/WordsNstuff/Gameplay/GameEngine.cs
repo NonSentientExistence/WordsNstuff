@@ -65,6 +65,7 @@ public class GameEngine
         _state.Player2LastDamage = damage1.ToString();
         _state.Player1Word = null;
         _state.Player2Word = null;
+        _state.RoundNumber++;
         if (IsOver())
         {
             _state.Status = GameStatus.Finished;

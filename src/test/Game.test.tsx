@@ -66,7 +66,7 @@ describe("Play", () => {
     await act(async () => { vi.advanceTimersByTime(1000) })
     // Advance through game poll to display the timer
     await act(async () => { vi.advanceTimersByTime(1000) })
-    expect(screen.getByText(/sekunder/)).toBeInTheDocument()
+    expect(screen.getByText(/seconds left/)).toBeInTheDocument()
   })
 
   it('skippar rundan om inget ord är lagt och tiden tar slug', async () => {

@@ -14,6 +14,7 @@ interface GameState {
   player2LastWord: string | null
   player1LastDamage: number
   player2LastDamage: number
+  roundNumber: number
 }
 
 export interface GameStats {
@@ -103,9 +104,9 @@ export function useGame(onEnd: (stats: GameStats) => void) {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
-      // Reset submitted state when HP changes and increase round count
+      // Reset submitted state and increment round counter when a new round starts
       setGame(prev => {
-        if (prev && (prev.player1Hp !== data.player1Hp || prev.player2Hp !== data.player2Hp)) {
+        if (prev && prev.roundNumber !== data.roundNumber) {
           setSubmitted(false)
           roundsRef.current += 1
           submittedAtRef.current = null

@@ -6,6 +6,7 @@ public class GameState
     public Player Player2 { get; }
     public List<char> Pool { get; }
     public GameStatus Status { get; set; }
+    public int RoundNumber { get; set; } = 0;
 
     // Holds player words, starts at null
     public string? Player1Word { get; set; }

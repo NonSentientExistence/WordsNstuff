@@ -318,4 +318,14 @@ public class GameEngineTests
         Assert.Equal(100, game.Player2.Hp);
         Assert.Equal(95, game.Player1.Hp);
     }
+
+    [Fact]
+    public void ResolveRound_IncrementsRoundNumber()
+    {
+        var (engine, game) = CreateGame();
+        Assert.Equal(0, game.RoundNumber);
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        Assert.Equal(1, game.RoundNumber);
+    }
 }
