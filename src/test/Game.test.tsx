@@ -2,6 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import Play from "../pages/Play";
+import Game from "../parts/Game";
 
 describe("Play", () => {
   beforeEach(() => {
@@ -27,7 +28,7 @@ describe("Play", () => {
     render(
       <MemoryRouter initialEntries={['/play/ABC123']}>
         <Routes>
-          <Route path="/play/:code" element={<Play />} />
+          <Route path="/play/:code" element={<Game onEnd={() => {}} />} />
         </Routes>
       </MemoryRouter>
     )

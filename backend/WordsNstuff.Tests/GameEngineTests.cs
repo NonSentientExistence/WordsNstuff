@@ -82,6 +82,9 @@ public class GameEngineTests
         engine.SubmitWord("player1", "CAT");
         engine.SubmitWord("player2", "DOG");
 
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
+
         engine.SubmitWord("player1", "WORD");
         engine.SubmitWord("player2", "PLAY");
 
@@ -108,6 +111,9 @@ public class GameEngineTests
         var (engine, game) = CreateGame();
         engine.SubmitWord("player1", "CAT"); // 5 dmg
         engine.SubmitWord("player2", "DOG"); // 5 dmg
+
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
 
         engine.SubmitWord("player1", "WORD"); // W(4)+O(1)+R(1)+D(2) = 8 dmg
         engine.SubmitWord("player2", "PLAY"); // P(3)+L(1)+A(1)+Y(4) = 9 dmg
