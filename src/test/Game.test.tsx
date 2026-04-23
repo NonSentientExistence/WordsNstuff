@@ -6,6 +6,7 @@ import Play from '../pages/Play'
 describe('Play', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    sessionStorage.setItem('playerName', 'Testspelaren')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -21,6 +22,8 @@ describe('Play', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
+    sessionStorage.clear()
   })
 
   it('visar att spelet har startat', async () => {
@@ -31,9 +34,40 @@ describe('Play', () => {
         </Routes>
       </MemoryRouter>
     )
-    await act(async () => {
-      vi.advanceTimersByTime(1000)
-    })
+    await act(async () => { vi.advanceTimersByTime(1000) })
     expect(screen.getByText('WordsNstuff')).toBeInTheDocument()
+  })
+
+
+  it('visar en nedräkning när spelet är igång', async () => {
+    render(
+      <MemoryRouter initialEntries={['/play/ABC123']}>
+        <Routes>
+          <Route path="/play/:code" element={<Play />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    //Advance through lobby poll to start game
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    //Advance through game poll to display the timer
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    expect(screen.getByText(/sekunder/)).toBeInTheDocument()
+  })
+
+  it('skippar rundan om inget ord är lagt och tiden tar slug', async () => {
+    render(
+      <MemoryRouter initialEntries={['/play/ABC123']}>
+        <Routes>
+          <Route path="/play/:code" element={<Play />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    // Advance through lobby and game poll
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    // Advance through the 30 second timer
+    await act(async () => { vi.advanceTimersByTime(30000) })
+    // Button should show Waiting if round was skipped
+    expect(screen.getByText('Waiting...')).toBeInTheDocument()
   })
 })

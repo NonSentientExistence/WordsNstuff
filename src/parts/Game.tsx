@@ -5,7 +5,7 @@ interface GameProps {
 }
 
 export default function Game({ onEnd }: GameProps) {
-  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit } = useGame(onEnd)
+  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, timeLeft } = useGame(onEnd)
   
   return (
     <div>
@@ -30,6 +30,9 @@ export default function Game({ onEnd }: GameProps) {
               ))}
             </div>
           </div>
+
+      {/* Timer */}
+      <p>{timeLeft} seconds left</p>
 
       {/* Word input */}
       <div>

@@ -26,11 +26,10 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     const [word, setWord] = useState('')
     const [submitted, setSubmitted] = useState(false)
     const [message, setMessage] = useState('')
+    const [timeLeft, setTimeLeft] = useState(30)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const roundsRef = useRef(0)
     const damageDealtRef = useRef(0)
-    const token = getPlayerToken()
-    const playerName = sessionStorage.getItem('playerName') || 'You'
 
   // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
@@ -38,8 +37,30 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     damageDealtRef.current = 0
   }, [])
 
+   // Countdown timer, resets each round and auto submits if it runs out
+  useEffect(() => {
+    setTimeLeft(30)
+    if (submitted) return // Stop count down if waiting for other player
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          if (word.trim()) handleSubmit()
+          else setSubmitted(true) // skip if nothing typed
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [submitted])
+
   // Poll game state every second
   useEffect(() => {
+    const token = getPlayerToken()
+    const playerName = sessionStorage.getItem('playerName') || 'You'
+
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
@@ -84,8 +105,9 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     }
   }
 
+  const token = getPlayerToken()
   const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
   const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
 
-  return { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit }
+  return { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, timeLeft }
 }
