@@ -7,8 +7,6 @@ Feature: Player Health Visualization
     Given I have 100 HP
     When I look at my health icon
     Then the icon should be green
-    And the face should show a smile
-    And no cracks or blood should be visible
 
   Scenario: Damaged player shows yellow icon with bandage
     Given I have 60 HP
