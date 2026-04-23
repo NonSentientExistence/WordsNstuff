@@ -29,5 +29,5 @@ export default function Finished({ onReplay, stats }: FinishedProps) {
       </div>
       <button onClick={handleReplay}>Play Again</button>
     </div>
-  )
+  );
 }

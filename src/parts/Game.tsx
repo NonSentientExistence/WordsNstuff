@@ -1,4 +1,6 @@
 import { useGame, type GameStats } from "../hooks/useGame"
+import PlayerHealthIcon from "../components/PlayerHealthIcon";
+import "../components/game.css";
 
 interface GameProps {
   onEnd: (stats: GameStats) => void
@@ -6,30 +8,50 @@ interface GameProps {
 
 export default function Game({ onEnd }: GameProps) {
   const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit } = useGame(onEnd)
-  
+
+  if (!game) return <p>Loading game...</p>;
+
   return (
     <div>
-
       <h1>WordsNstuff</h1>
 
-      {!game ? (
-        <p>Loading game...</p>
-      ) : (
-        <>
-          <div>
-            <p>Your HP: {myHp}</p>
-            <p>Opponent HP: {opponentHp}</p>
-          </div>
-          <div>
-            <h2>Letter Pool</h2>
-            <div>
-              {game.pool.map((letter, index) => (
-                <span key={index} style={{ margin: '4px', padding: '8px', border: '1px solid black' }}>
-                  {letter}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="health-display">
+        <div className="player-section">
+          <h2>Du</h2>
+          <PlayerHealthIcon hp={myHp ?? 0} maxHp={100} size={80} showLabel={true} />
+          <p>HP: {myHp}</p>
+        </div>
+
+        <div className="player-section">
+          <h2>Opponent</h2>
+          <PlayerHealthIcon
+            hp={opponentHp ?? 0}
+            maxHp={100}
+            size={80}
+            showLabel={true}
+          />
+          <p>HP: {opponentHp}</p>
+        </div>
+      </div>
+
+      {/* Letter pool */}
+      <div>
+        <h2>Letter Pool</h2>
+        <div>
+          {game.pool.map((letter, index) => (
+            <span
+              key={index}
+              style={{
+                margin: "4px",
+                padding: "8px",
+                border: "1px solid black",
+              }}
+            >
+              {letter}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Word input */}
       <div>
@@ -41,13 +63,11 @@ export default function Game({ onEnd }: GameProps) {
           placeholder="Type your word..."
         />
         <button onClick={handleSubmit} disabled={submitted}>
-          {submitted ? 'Waiting...' : 'Submit Word'}
+          {submitted ? "Waiting..." : "Submit Word"}
         </button>
       </div>
 
       {message && <p>{message}</p>}
-      </>
-      )}
     </div>
-  )
+  );
 }
