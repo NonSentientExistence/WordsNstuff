@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { getGame, submitWord } from '../api'
+import { getGame, submitWord, skipRound } from '../api'
 import { getPlayerToken } from '../playerToken'
 
 interface GameState {
@@ -30,6 +30,8 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const roundsRef = useRef(0)
     const damageDealtRef = useRef(0)
+    const submittedAtRef = useRef<number | null>(null)
+    const wordRef = useRef('')
 
   // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
@@ -37,43 +39,82 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     damageDealtRef.current = 0
   }, [])
 
-   // Countdown timer, resets each round and auto submits if it runs out
+  // Keep wordRef in sync with word state
   useEffect(() => {
+    wordRef.current = word
+  }, [word])
+
+  // Bypass submitted check so timer can always submit if a word is typed
+  const doSubmit = async (currentWord: string) => {
+    if (!code || !currentWord.trim()) return
+    const { success, message: msg, damage } = await submitWord(code, currentWord.trim())
+    if (success) {
+      setSubmitted(true)
+      setMessage('Word submitted! Waiting for opponent...')
+      damageDealtRef.current += damage
+      setWord('')
+      wordRef.current = '' // ← clear ref too
+      submittedAtRef.current = Date.now()
+    } else {
+      setMessage(msg)
+    }
+  }
+
+  // Countdown timer, resets each round and auto submits or skips if runs out
+useEffect(() => {
     setTimeLeft(30)
-    if (submitted) return // Stop count down if waiting for other player
+    if (submitted) return
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          if (word.trim()) handleSubmit()
-          else setSubmitted(true) // skip if nothing typed
           return 0
         }
         return prev - 1
       })
     }, 1000)
-    return () => clearInterval(timer)
-  }, [submitted])
+
+    const submitTimeout = setTimeout(() => {
+      if (wordRef.current.trim()) {
+        doSubmit(wordRef.current)
+        setWord('')
+      } else {
+        skipRound(code!)
+        setSubmitted(true)
+      }
+    }, 30000)
+
+    return () => {
+      clearInterval(timer)
+      clearTimeout(submitTimeout)
+    }
+    }, [submitted])
 
   // Poll game state every second
   useEffect(() => {
     const token = getPlayerToken()
     const playerName = sessionStorage.getItem('playerName') || 'You'
-
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
-
       // Reset submitted state when HP changes and increase round count
       setGame(prev => {
         if (prev && (prev.player1Hp !== data.player1Hp || prev.player2Hp !== data.player2Hp)) {
           setSubmitted(false)
           roundsRef.current += 1
+          submittedAtRef.current = null
         }
         return data
       })
+
+      //Check if the opponent has timed out (35s since submit)
+      if (submittedAtRef.current && Date.now() - submittedAtRef.current > 35000) {
+        submittedAtRef.current = null
+        setSubmitted(false)
+        setMessage('Opponent timed out, submit a new word!')
+      }
 
       // Game is over, pass final stats
       if (data.status === 'Finished') {
@@ -88,21 +129,16 @@ export function useGame(onEnd: (stats: GameStats) => void) {
         })
       }
     }, 1000)
-    return () => clearInterval(intervalRef.current!)
+
+    return () => {
+      clearInterval(intervalRef.current!)
+    }
   }, [code, onEnd])
 
-
+  //Calls doSubmit
   const handleSubmit = async () => {
     if (!code || !word.trim() || submitted) return
-    const { success, message:msg, damage } = await submitWord(code, word.trim())
-    if (success) {
-      setSubmitted(true)
-      setMessage('Word submitted! Waiting for opponent...')
-      damageDealtRef.current += damage
-      setWord('')
-    } else {
-      setMessage(msg)  // Returned reason from backend
-    }
+    await doSubmit(word)
   }
 
   const token = getPlayerToken()

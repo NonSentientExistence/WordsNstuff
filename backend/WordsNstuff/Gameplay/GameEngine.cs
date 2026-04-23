@@ -38,25 +38,45 @@ public class GameEngine
 
     private void ResolveRound()
     {
-        // Calculate damage for each word
-        int damage1 = WordValue.Calculate(_state.Player1Word!);
-        int damage2 = WordValue.Calculate(_state.Player2Word!);
+        lock (_state.Lock)
+        {
+            // Calculate damage for each word
+            int damage1 = WordValue.Calculate(_state.Player1Word!);
+            int damage2 = WordValue.Calculate(_state.Player2Word!);
 
-        // Both players takes damage
-        _state.Player1.TakeDamage(damage2); // player1 takes damage from player2's word and vice versa
-        _state.Player2.TakeDamage(damage1); 
+            // Both players takes damage
+            _state.Player1.TakeDamage(damage2); // player1 takes damage from player2's word and vice versa
+            _state.Player2.TakeDamage(damage1); 
 
-        // Set word to null for next round
-        _state.Player1Word = null;
-        _state.Player2Word = null;
+            // Set word to null for next round
+            _state.Player1Word = null;
+            _state.Player2Word = null;
 
-        // Check if the game has ended
-        if (IsOver())
-            _state.Status = GameStatus.Finished;
+            // Check if the game has ended
+            if (IsOver())
+            {
+                _state.Status = GameStatus.Finished;
+                return;
+            }
 
-        // Generates a new pool of letters for each new round
-        _state.Pool.Clear();
-        _state.Pool.AddRange(LetterPool.Generate(20));    
+            // Generates a new pool of letters for each new round
+            var newPool = LetterPool.Generate(20);
+            _state.Pool.Clear();
+            _state.Pool.AddRange(LetterPool.Generate(20));
+        }
+    }
+
+    public void SkipWord(string playerId)
+    {
+        // Submit empty, so the round can resolve
+        if (playerId == _state.Player1.Id)
+            _state.Player1Word = "";
+        else if (playerId == _state.Player2.Id)
+            _state.Player2Word = "";
+
+        // Resolve if both players have submitted
+        if (_state.Player1Word != null && _state.Player2Word != null)
+            ResolveRound();
     }
 
     public bool IsOver()

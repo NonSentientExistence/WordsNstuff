@@ -32,7 +32,7 @@ export default function Game({ onEnd }: GameProps) {
           </div>
 
       {/* Timer */}
-      <p>{timeLeft} seconds left</p>
+      {!submitted && <p>{timeLeft} sekunder kvar</p>}
 
       {/* Word input */}
       <div>

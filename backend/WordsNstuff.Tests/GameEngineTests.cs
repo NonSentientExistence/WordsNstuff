@@ -193,4 +193,69 @@ public class GameEngineTests
         var result = engine.SubmitWord("player1", "cat");
         Assert.Equal(SubmitResult.InvalidPool, result);
     }
+
+    // Ensure skipping a round stores an empty string for player 1
+    [Fact]
+    public void SkipWord_StoresEmptyStringForPlayer1()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        Assert.Equal("", game.Player1Word);
+    }
+
+    // Ensure skipping a round stores an empty string for player 1
+    [Fact]
+    public void SkipWord_StoresEmptyStringForPlayer2()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player2");
+        Assert.Equal("", game.Player2Word);
+    }
+
+    // Ensure skip round deals 0 dmg
+    [Fact]
+    public void SkipWord_DealsNoDamage()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        Assert.Equal(100, game.Player1.Hp);
+        Assert.Equal(100, game.Player2.Hp);
+    }
+
+    // Ensure round resolves when both players skips 
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenBothPlayersSkip()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        // Words should be cleared after round resolves
+        Assert.Null(game.Player1Word);
+        Assert.Null(game.Player2Word);
+    }
+
+    // Ensure round resolves when player1 submits and player 2 skips
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenPlayer1SubmitsPlayer2Skips()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // Deals 5 dmg
+        engine.SkipWord("player2"); // Deals 0dmg
+        // player1 takes 0 dmg, player2 takes 5dmg
+        Assert.Equal(100, game.Player1.Hp);
+        Assert.Equal(95, game.Player2.Hp);
+    }
+
+    // Ensure round resolves when player1 submits and player 2 skips
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenPlayer2SubmitsPlayer1Skips()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player2", "CAT"); // Deals 5 dmg
+        engine.SkipWord("player1"); // Deals 0dmg
+        // player2 takes 0 dmg, player1 takes 5dmg
+        Assert.Equal(100, game.Player2.Hp);
+        Assert.Equal(95, game.Player1.Hp);
+    }
 }

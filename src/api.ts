@@ -67,6 +67,13 @@ export async function submitWord(code: string, word: string): Promise<{ success:
   return { success: res.ok, message, damage }
 }
 
+export async function skipRound(code: string): Promise<void> {
+  await fetch(`/api/games/${code}/skip`, {
+    method: 'POST',
+    headers: headers()
+  })
+}
+
 export async function resetLobby(code: string): Promise<boolean> {
   const res = await fetch(`/api/lobbies/${code}/reset`, { 
     method: 'POST', 

@@ -50,4 +50,10 @@ public class GameService
     {
         _games.Remove(gameId);
     }
+
+    public void SkipWord(string gameId, string playerId)
+    {
+        if (_games.TryGetValue(gameId, out var game))
+            game.engine.SkipWord(playerId);
+    }
 }

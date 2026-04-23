@@ -1,5 +1,6 @@
 public class GameState
 {
+    public readonly object Lock = new();
     public string GameId { get; }
     public Player Player1 { get; }
     public Player Player2 { get; }

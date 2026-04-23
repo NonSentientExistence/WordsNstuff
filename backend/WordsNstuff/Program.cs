@@ -73,15 +73,18 @@ app.MapGet("/api/games/{code}", (string code, GameService gameService) =>
     var game = gameService.GetGame(code);
     if (game is null) return Results.NotFound("Game not found");
 
-    return Results.Ok(new
+    lock (game.Lock)
     {
-        status = game.Status.ToString(),
-        pool = game.Pool,
-        player1Id = game.Player1.Id,
-        player2Id = game.Player2.Id,
-        player1Hp = game.Player1.Hp,
-        player2Hp = game.Player2.Hp
-    });
+        return Results.Ok(new
+        {
+            status = game.Status.ToString(),
+            pool = game.Pool,
+            player1Id = game.Player1.Id,
+            player2Id = game.Player2.Id,
+            player1Hp = game.Player1.Hp,
+            player2Hp = game.Player2.Hp
+        });
+    }
 });
 
 app.MapPost("/api/games/{code}/submit", async (string code, HttpRequest request, GameService gameService) =>
@@ -115,6 +118,15 @@ app.MapPost("/api/lobbies/{code}/reset", (string code) =>
 {
     var reset = lobbyService.ResetLobby(code);
     return reset ? Results.Ok() : Results.BadRequest("Could not reset lobby");
+});
+
+//Skip round endpoint
+app.MapPost("/api/games/{code}/skip", (string code, HttpRequest request, GameService gameService) =>
+{
+    var token = request.Headers["X-Player-Token"].ToString();
+    if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
+    gameService.SkipWord(code, token);
+    return Results.Ok();
 });
 
 app.UseDefaultFiles();
