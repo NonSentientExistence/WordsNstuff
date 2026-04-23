@@ -5,7 +5,7 @@ interface GameProps {
 }
 
 export default function Game({onEnd}: GameProps) {
-  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit } = useGame(onEnd)
+  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage } = useGame(onEnd)
   
   return (
     <div>
@@ -17,11 +17,17 @@ export default function Game({onEnd}: GameProps) {
       ) : (
         <>
           <div>
+            -------------------------------------
             <p>Your HP: {myHp}</p>
+            <p>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>-${opponentLastDamage}-dmg--|>` : ''}</p>
+            -------------------------------------
             <p>Opponent HP: {opponentHp}</p>
+            <p>Opponents word: {opponentLastWord ?? '—'} {myLastDamage ? `>>--${myLastDamage}-dmg--|>` : ''}</p>
           </div>
+          -------------------------------------
           <div>
             <h2>Letter Pool</h2>
+            --------------
             <div>
               {game.pool.map((letter, index) => (
                 <span key={index} style={{ margin: '4px', padding: '8px', border: '1px solid black' }}>
@@ -30,7 +36,8 @@ export default function Game({onEnd}: GameProps) {
               ))}
             </div>
           </div>
-
+-------------------------------------
+-------------------------------------
       {/* Word input */}
       <div>
         <input

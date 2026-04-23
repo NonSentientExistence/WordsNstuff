@@ -78,7 +78,11 @@ app.MapGet("/api/games/{code}", (string code, GameService gameService) =>
         player1Id = game.Player1.Id,
         player2Id = game.Player2.Id,
         player1Hp = game.Player1.Hp,
-        player2Hp = game.Player2.Hp
+        player2Hp = game.Player2.Hp,
+        player1LastWord = game.Player1LastWord,
+        player2LastWord = game.Player2LastWord,
+        player1LastDamage = game.Player1LastDamage,
+        player2LastDamage = game.Player2LastDamage
     });
 });
 
