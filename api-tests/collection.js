@@ -6,6 +6,7 @@ import startGame from './requests/start-game.js';
 import getGame from './requests/get-game.js';
 import setPool from './requests/set-pool.js';
 import submitWord from './requests/submit-word.js';
+import submitInvalidWord from './requests/submit-invalid-word.js';
 
 export const name = 'FromScratchAPI';
 
@@ -28,5 +29,6 @@ export const order = [
   startGame,
   getGame,
   setPool,
-  submitWord
+  submitWord,
+  submitInvalidWord
 ];
