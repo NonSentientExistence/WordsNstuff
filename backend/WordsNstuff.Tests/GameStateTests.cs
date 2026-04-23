@@ -22,7 +22,7 @@ public class GameStateTests
     [Fact]
     public void NewGame_GameHasLetterPool()
     {
-        var game = new GameState("player1","player1");
+        var game = new GameState("player1","player2");
         Assert.NotNull(game.Pool);
         Assert.NotEmpty(game.Pool);
     }
@@ -31,7 +31,7 @@ public class GameStateTests
     [Fact]
     public void NewGame_NoWordsHasBeenSubmitted()
     {
-        var game = new GameState("player1","player1");
+        var game = new GameState("player1","player2");
         Assert.Null(game.Player1Word);
         Assert.Null(game.Player2Word);
     }
@@ -40,7 +40,7 @@ public class GameStateTests
     [Fact]
     public void NewGame_HasStatusInProgress()
     {
-        var game = new GameState("player1","player1");
+        var game = new GameState("player1","player2");
         Assert.Equal(GameStatus.InProgress, game.Status);
     }
 }
