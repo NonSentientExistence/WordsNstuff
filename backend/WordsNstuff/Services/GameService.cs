@@ -1,6 +1,6 @@
 public class GameService
 {
-    private readonly Dictionary<string, (GameState state, GameEngine engine)> _games = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (GameState state, GameEngine engine)> _games = new();
     private readonly WordValidator _validator;
 
     public GameService(WordValidator validator)
@@ -28,12 +28,11 @@ public class GameService
         else return null; 
     }
 
-    //If submitted to a game that doesn't exist, will do nothing as TryGetValue will return false
-    public SubmitResult  SubmitWord(string gameId, string playerId, string word)
+    public SubmitResult SubmitWord(string gameId, string playerId, string word)
     {
-        if (_games.TryGetValue(gameId, out var game))
+        if (!_games.TryGetValue(gameId, out var game))
+            return SubmitResult.GameNotFound;
         return game.engine.SubmitWord(playerId, word);
-        return SubmitResult.InvalidWord;
     }
 
     // Only for testing, allows for setting a known pool of letters for tests
@@ -48,6 +47,12 @@ public class GameService
 
     public void RemoveGame(string gameId)
     {
-        _games.Remove(gameId);
+        _games.TryRemove(gameId, out _);
+    }
+
+    public void SkipWord(string gameId, string playerId)
+    {
+        if (_games.TryGetValue(gameId, out var game))
+            game.engine.SkipWord(playerId);
     }
 }

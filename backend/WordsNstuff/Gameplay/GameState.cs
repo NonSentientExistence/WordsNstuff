@@ -1,14 +1,21 @@
 public class GameState
 {
+    public readonly object Lock = new();
     public string GameId { get; }
     public Player Player1 { get; }
     public Player Player2 { get; }
     public List<char> Pool { get; }
     public GameStatus Status { get; set; }
+    public int RoundNumber { get; set; } = 0;
 
     // Holds player words, starts at null
     public string? Player1Word { get; set; }
     public string? Player2Word { get; set; }
+    public string? Player1LastWord { get; set; }
+    public string? Player2LastWord { get; set; }
+    public int? Player1LastDamage { get; set; }
+    public int? Player2LastDamage { get; set; }
+    
 
     public GameState(string player1Id, string player2Id)
     {

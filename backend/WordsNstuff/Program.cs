@@ -76,11 +76,16 @@ app.MapGet("/api/games/{code}", (string code, GameService gameService) =>
     return Results.Ok(new
     {
         status = game.Status.ToString(),
-        pool = game.Pool,
+        pool = game.Pool.ToList(),
         player1Id = game.Player1.Id,
         player2Id = game.Player2.Id,
         player1Hp = game.Player1.Hp,
-        player2Hp = game.Player2.Hp
+        player2Hp = game.Player2.Hp,
+        player1LastWord = game.Player1LastWord,
+        player2LastWord = game.Player2LastWord,
+        player1LastDamage = game.Player1LastDamage,
+        player2LastDamage = game.Player2LastDamage,
+        roundNumber = game.RoundNumber
     });
 });
 
@@ -99,6 +104,8 @@ app.MapPost("/api/games/{code}/submit", async (string code, HttpRequest request,
         SubmitResult.Success => Results.Ok(new { damage = WordValue.Calculate(body.Word) }),
         SubmitResult.InvalidWord => Results.BadRequest("Word is not in the dictionary"),
         SubmitResult.InvalidPool => Results.BadRequest("Letters are not available in the pool"),
+        SubmitResult.GameNotFound => Results.NotFound("Game not found"),
+        SubmitResult.InvalidPlayer => Results.BadRequest("Player does not belong to this game"),
         _ => Results.BadRequest("Invalid word")
     };
 });
@@ -115,6 +122,15 @@ app.MapPost("/api/lobbies/{code}/reset", (string code) =>
 {
     var reset = lobbyService.ResetLobby(code);
     return reset ? Results.Ok() : Results.BadRequest("Could not reset lobby");
+});
+
+//Skip round endpoint
+app.MapPost("/api/games/{code}/skip", (string code, HttpRequest request, GameService gameService) =>
+{
+    var token = request.Headers["X-Player-Token"].ToString();
+    if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
+    gameService.SkipWord(code, token);
+    return Results.Ok();
 });
 
 app.UseDefaultFiles();

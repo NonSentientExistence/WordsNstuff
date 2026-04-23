@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Header from "../parts/Header";
 import Lobby from "../parts/Lobby";
 import Game from "../parts/Game";
@@ -18,15 +18,18 @@ export default function Play() {
     const [gameState, setGameState] = useState<GameState>('lobby')
     const [stats, setStats] = useState<GameStats | null>(null)
 
+    const handleStart = useCallback(() => setGameState('game'), [])
+    const handleEnd = useCallback((s: GameStats) => {
+        setStats(s)
+        setGameState('finished')
+    }, [])
+
     return (
         <div>
             <Header />
-            {gameState === 'lobby' && <Lobby onStart={() => setGameState('game')} />}
+            {gameState === 'lobby' && <Lobby onStart={handleStart} />}
             {gameState === 'game' && (
-                <Game onEnd={(s) => {
-                    setStats(s)
-                    setGameState('finished')
-                }} />
+                <Game onEnd={handleEnd} />
                 )}
             {gameState === 'finished' && stats && (
             <Finished onReplay={() => setGameState('lobby')} stats={stats} />

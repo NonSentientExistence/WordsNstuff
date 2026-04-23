@@ -74,4 +74,75 @@ public class LobbyServiceTest : IDisposable
         var result = _service.StartGame(code, "other-token");
         Assert.False(result);
     }
+
+    [Fact]
+    public void UpdatePlayerName_ReturnsTrueForValidToken()
+    {
+        var code = _service.CreateLobby("token-1");
+        var result = _service.UpdatePlayerName(code, "token-1", "Spelaren");
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void UpdatePlayerName_ReturnsFalseForUnknownToken()
+    {
+        var code = _service.CreateLobby("token-1");
+        var result = _service.UpdatePlayerName(code, "token-unknown", "Spelaren");
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void ResetLobby_ReturnsTrueForExistingLobby()
+    {
+        var code = _service.CreateLobby("token-1");
+        _service.JoinLobby(code, "token-2");
+        var result = _service.ResetLobby(code);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void ResetLobby_RemovesPlayer2AndSetsStatusWaiting()
+    {
+        var code = _service.CreateLobby("token-1");
+        _service.JoinLobby(code, "token-2");
+        _service.ResetLobby(code);
+        var lobby = _service.GetLobby(code) as dynamic;
+        Assert.NotNull(lobby);
+        var (p1, p2) = _service.GetPlayerTokens(code);
+        Assert.NotNull(p1);
+        Assert.Null(p2);
+    }
+
+    [Fact]
+    public void ResetLobby_ClearsPlayer2Name()
+    {
+        var code = _service.CreateLobby("token-1");
+        _service.JoinLobby(code, "token-2", "Player Two");
+        _service.ResetLobby(code);
+
+        using var connection = Database.GetConnection();
+        var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT Player2Name FROM Lobbies WHERE Code = @code";
+        cmd.Parameters.AddWithValue("@code", code);
+        var name = cmd.ExecuteScalar();
+        Assert.True(name is null || name == DBNull.Value);
+    }
+
+    [Fact]
+    public void GetPlayerTokens_ReturnsCorrectTokens()
+    {
+        var code = _service.CreateLobby("token-1");
+        _service.JoinLobby(code, "token-2");
+        var (p1, p2) = _service.GetPlayerTokens(code);
+        Assert.Equal("token-1", p1);
+        Assert.Equal("token-2", p2);
+    }
+
+    [Fact]
+    public void GetPlayerTokens_ReturnsNullWhenLobbyDoesNotExist()
+    {
+        var (p1, p2) = _service.GetPlayerTokens("BADCOD");
+        Assert.Null(p1);
+        Assert.Null(p2);
+    }
 }

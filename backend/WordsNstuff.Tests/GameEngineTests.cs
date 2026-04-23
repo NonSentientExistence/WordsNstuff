@@ -62,6 +62,66 @@ public class GameEngineTests
         Assert.Equal(95, game.Player2.Hp);
     }
 
+    // Ensure last words are saved for both players after a round resolves
+    [Fact]
+    public void ResolveRound_StoresLastWordForBothPlayers()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT");
+        engine.SubmitWord("player2", "DOG");
+
+        Assert.Equal("CAT", game.Player1LastWord);
+        Assert.Equal("DOG", game.Player2LastWord);
+    }
+
+    // Ensure last words are overwritten with the most recent round's words
+    [Fact]
+    public void ResolveRound_LastWordUpdatesEachRound()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT");
+        engine.SubmitWord("player2", "DOG");
+
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
+
+        engine.SubmitWord("player1", "WORD");
+        engine.SubmitWord("player2", "PLAY");
+
+        Assert.Equal("WORD", game.Player1LastWord);
+        Assert.Equal("PLAY", game.Player2LastWord);
+    }
+
+    // Ensure damage dealt is stored for both players after a round resolves
+    [Fact]
+    public void ResolveRound_StoresLastDamageForBothPlayers()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // CAT = 5 dmg
+        engine.SubmitWord("player2", "DOG"); // DOG = 5 dmg
+
+        Assert.Equal(5, game.Player1LastDamage); // player1 takes damage from DOG
+        Assert.Equal(5, game.Player2LastDamage); // player2 takes damage from CAT
+    }
+
+    // Ensure last damage is overwritten with the most recent round's damage
+    [Fact]
+    public void ResolveRound_LastDamageUpdatesEachRound()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // 5 dmg
+        engine.SubmitWord("player2", "DOG"); // 5 dmg
+
+        game.Pool.Clear();
+        game.Pool.AddRange(new[] { 'W','O','R','D','P','L','A','Y' });
+
+        engine.SubmitWord("player1", "WORD"); // W(4)+O(1)+R(1)+D(2) = 8 dmg
+        engine.SubmitWord("player2", "PLAY"); // P(3)+L(1)+A(1)+Y(4) = 9 dmg
+
+        Assert.Equal(9, game.Player1LastDamage); // player1 takes damage from PLAY
+        Assert.Equal(8, game.Player2LastDamage); // player2 takes damage from WORD
+    }
+
     //Ensure word submits are empty when starting a new round
     [Fact]
     public void ResolveRound_ClearsWordsAfterRound()
@@ -183,7 +243,15 @@ public class GameEngineTests
     }
 
     [Fact]
-    public void SubmitWord_NotInLetterPool_ReturnInvalidWord()
+    public void SubmitWord_UnknownPlayerId_ReturnInvalidPlayer()
+    {
+        var (engine, _) = CreateGame();
+        var result = engine.SubmitWord("unknown-player", "CAT");
+        Assert.Equal(SubmitResult.InvalidPlayer, result);
+    }
+
+    [Fact]
+    public void SubmitWord_NotInLetterPool_ReturnInvalidPool()
     {
         var (engine, game) = CreateGame();
         // Override pool with known letters
@@ -192,5 +260,80 @@ public class GameEngineTests
         
         var result = engine.SubmitWord("player1", "cat");
         Assert.Equal(SubmitResult.InvalidPool, result);
+    }
+
+    // Ensure skipping a round stores an empty string for player 1
+    [Fact]
+    public void SkipWord_StoresEmptyStringForPlayer1()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        Assert.Equal("", game.Player1Word);
+    }
+
+    // Ensure skipping a round stores an empty string for player 1
+    [Fact]
+    public void SkipWord_StoresEmptyStringForPlayer2()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player2");
+        Assert.Equal("", game.Player2Word);
+    }
+
+    // Ensure skip round deals 0 dmg
+    [Fact]
+    public void SkipWord_DealsNoDamage()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        Assert.Equal(100, game.Player1.Hp);
+        Assert.Equal(100, game.Player2.Hp);
+    }
+
+    // Ensure round resolves when both players skips 
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenBothPlayersSkip()
+    {
+        var (engine, game) = CreateGame();
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        // Words should be cleared after round resolves
+        Assert.Null(game.Player1Word);
+        Assert.Null(game.Player2Word);
+    }
+
+    // Ensure round resolves when player1 submits and player 2 skips
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenPlayer1SubmitsPlayer2Skips()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player1", "CAT"); // Deals 5 dmg
+        engine.SkipWord("player2"); // Deals 0dmg
+        // player1 takes 0 dmg, player2 takes 5dmg
+        Assert.Equal(100, game.Player1.Hp);
+        Assert.Equal(95, game.Player2.Hp);
+    }
+
+    // Ensure round resolves when player1 submits and player 2 skips
+    [Fact]
+    public void SkipWord_ResolvesRoundWhenPlayer2SubmitsPlayer1Skips()
+    {
+        var (engine, game) = CreateGame();
+        engine.SubmitWord("player2", "CAT"); // Deals 5 dmg
+        engine.SkipWord("player1"); // Deals 0dmg
+        // player2 takes 0 dmg, player1 takes 5dmg
+        Assert.Equal(100, game.Player2.Hp);
+        Assert.Equal(95, game.Player1.Hp);
+    }
+
+    [Fact]
+    public void ResolveRound_IncrementsRoundNumber()
+    {
+        var (engine, game) = CreateGame();
+        Assert.Equal(0, game.RoundNumber);
+        engine.SkipWord("player1");
+        engine.SkipWord("player2");
+        Assert.Equal(1, game.RoundNumber);
     }
 }

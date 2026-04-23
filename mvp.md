@@ -8,7 +8,7 @@ Word Battle Arena is a turn-based 1v1 word game where vocabulary is your weapon.
 
 To prove the core concept of the game, the following flow must be fully functional:
 
-Two players connect to a game session and start with 50 HP each.
+Two players connect to a game session and start with 100 HP each.
 
 A shared, randomized pool of letters is generated.
 
@@ -82,4 +82,4 @@ Then the logic must calculate and return the damage as exactly 7.
 
 Given the backend service and database are running
 When a request is made to initialize a new game
-Then the database must successfully save two players, each with exactly 50 HP.
+Then the database must successfully save two players, each with exactly 100 HP.
