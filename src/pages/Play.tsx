@@ -4,7 +4,7 @@ import Lobby from "../parts/Lobby";
 import Game from "../parts/Game";
 import Finished from "../parts/Finished";
 
-type GameState = 'lobby' | 'game' | 'finished'
+type GameState = "lobby" | "game" | "finished";
 
 interface GameStats {
   rounds: number
@@ -26,8 +26,8 @@ export default function Play() {
                 <Game onEnd={(s) => {
                     setStats(s)
                     setGameState('finished')
-                }} /> 
-                )}        
+                }} />
+                )}
             {gameState === 'finished' && stats && (
             <Finished onReplay={() => setGameState('lobby')} stats={stats} />
             )}
