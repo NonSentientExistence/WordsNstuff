@@ -6,19 +6,31 @@ import Finished from "../parts/Finished";
 
 type GameState = "lobby" | "game" | "finished";
 
-export default function Play() {
-  const [gameState, setGameState] = useState<GameState>("lobby");
+interface GameStats {
+  rounds: number
+  damageDealt: number
+  won: boolean
+  playerName: string
+  code: string
+}
 
-  return (
-    <div>
-      <Header />
-      {gameState === "lobby" && <Lobby onStart={() => setGameState("game")} />}
-      {gameState === "game" && (
-        <Game onEnd={() => setTimeout(() => setGameState("finished"), 1500)} />
-      )}
-      {gameState === "finished" && (
-        <Finished onReplay={() => setGameState("lobby")} />
-      )}
-    </div>
-  );
+export default function Play() {
+    const [gameState, setGameState] = useState<GameState>('lobby')
+    const [stats, setStats] = useState<GameStats | null>(null)
+
+    return (
+        <div>
+            <Header />
+            {gameState === 'lobby' && <Lobby onStart={() => setGameState('game')} />}
+            {gameState === 'game' && (
+                <Game onEnd={(s) => {
+                    setStats(s)
+                    setGameState('finished')
+                }} />
+                )}
+            {gameState === 'finished' && stats && (
+            <Finished onReplay={() => setGameState('lobby')} stats={stats} />
+            )}
+        </div>
+    )
 }

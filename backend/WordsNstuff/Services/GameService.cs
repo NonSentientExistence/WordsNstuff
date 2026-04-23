@@ -29,11 +29,11 @@ public class GameService
     }
 
     //If submitted to a game that doesn't exist, will do nothing as TryGetValue will return false
-    public bool SubmitWord(string gameId, string playerId, string word)
+    public SubmitResult  SubmitWord(string gameId, string playerId, string word)
     {
         if (_games.TryGetValue(gameId, out var game))
         return game.engine.SubmitWord(playerId, word);
-        return false;    
+        return SubmitResult.InvalidWord;
     }
 
     // Only for testing, allows for setting a known pool of letters for tests
@@ -44,5 +44,10 @@ public class GameService
             game.state.Pool.Clear();
             game.state.Pool.AddRange(letters);
         }
+    }
+
+    public void RemoveGame(string gameId)
+    {
+        _games.Remove(gameId);
     }
 }
