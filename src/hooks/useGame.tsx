@@ -90,7 +90,7 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     }
   }
 
-  const token = getPlayerToken()
+
   const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
   const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
 
