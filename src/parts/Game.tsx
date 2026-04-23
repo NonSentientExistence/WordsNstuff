@@ -7,30 +7,30 @@ interface GameProps {
 }
 
 export default function Game({ onEnd }: GameProps) {
-  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit } = useGame(onEnd)
+  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage } = useGame(onEnd)
 
   if (!game) return <p>Loading game...</p>;
 
   return (
     <div>
-      <h1>WordsNstuff</h1>
+<h1>1v1 Battle To The Death</h1>
 
       <div className="health-display">
         <div className="player-section">
-          <h2>Du</h2>
+          <h2 style={{ color: "#025BD6"}}>You</h2>
           <PlayerHealthIcon hp={myHp ?? 0} maxHp={100} size={80} showLabel={true} />
-          <p>HP: {myHp}</p>
+          <p style={{ color: "#025BD6"}}>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>--${opponentLastDamage}-dmg--|>` : ''}</p>
         </div>
 
         <div className="player-section">
-          <h2>Opponent</h2>
+          <h2 style={{ color: "#F87402"}}>Opponent</h2>
           <PlayerHealthIcon
             hp={opponentHp ?? 0}
             maxHp={100}
             size={80}
             showLabel={true}
           />
-          <p>HP: {opponentHp}</p>
+          <p style={{ color: "#F87402"}}>Opponents word: {opponentLastWord ?? '—'} {myLastDamage ? `>>--${myLastDamage}-dmg--|>` : ''}</p>
         </div>
       </div>
 

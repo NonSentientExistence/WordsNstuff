@@ -2,6 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import Play from "../pages/Play";
+import Game from "../parts/Game";
 
 describe("Play", () => {
   beforeEach(() => {
@@ -20,8 +21,23 @@ describe("Play", () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
-  });
+    vi.useRealTimers()
+  })
+
+  it('shows last word labels', async () => {
+    render(
+      <MemoryRouter initialEntries={['/play/ABC123']}>
+        <Routes>
+          <Route path="/play/:code" element={<Game onEnd={() => {}} />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(screen.getByText(/Your word:/)).toBeInTheDocument()
+    expect(screen.getByText(/Opponents word:/)).toBeInTheDocument()
+  })
 
   it("visar att spelet har startat", async () => {
     render(

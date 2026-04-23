@@ -9,6 +9,11 @@ public class GameState
     // Holds player words, starts at null
     public string? Player1Word { get; set; }
     public string? Player2Word { get; set; }
+    public string? Player1LastWord { get; set; }
+    public string? Player2LastWord { get; set; }
+    public string? Player1LastDamage { get; set; }
+    public string? Player2LastDamage { get; set; }
+    
 
     public GameState(string player1Id, string player2Id)
     {

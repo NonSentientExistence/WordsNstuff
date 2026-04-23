@@ -10,6 +10,10 @@ interface GameState {
   player2Hp: number
   player1Id: string
   player2Id: string
+  player1LastWord: string | null
+  player2LastWord: string | null
+  player1LastDamage: number
+  player2LastDamage: number
 }
 
 export interface GameStats {
@@ -31,6 +35,7 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     const damageDealtRef = useRef(0)
     const token = getPlayerToken()
     const playerName = sessionStorage.getItem('playerName') || 'You'
+    
 
   // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
@@ -76,16 +81,23 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     const { success, message:msg, damage } = await submitWord(code, word.trim())
     if (success) {
       setSubmitted(true)
-      setMessage('Word submitted! Waiting for opponent...')
+      setMessage('Word submitted! Nice one!')
       damageDealtRef.current += damage
       setWord('')
+      setTimeout(() => setMessage(''), 3000)
     } else {
       setMessage(msg)  // Returned reason from backend
     }
   }
 
+
   const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
   const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
 
-  return { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit }
+  const myLastWord = game?.player1Id === token ? game?.player1LastWord : game?.player2LastWord
+  const opponentLastWord = game?.player1Id === token ? game?.player2LastWord : game?.player1LastWord
+  const myLastDamage = game?.player1Id === token ? game?.player1LastDamage : game?.player2LastDamage
+  const opponentLastDamage = game?.player1Id === token ? game?.player2LastDamage : game?.player1LastDamage
+
+  return {game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage }
 }
