@@ -13,7 +13,7 @@ export default function Game({ onEnd }: GameProps) {
 
   return (
     <div>
-<h1>1v1 Battle To Death</h1>
+<h1>1v1 Battle To The Death</h1>
 
       <div className="health-display">
         <div className="player-section">
