@@ -15,6 +15,8 @@ public static class WordValue
 
     public static int Calculate(string word)
     {
+        //Handles empty string for skip round
+        if (string.IsNullOrEmpty(word)) return 0;
         //Convert input string to uppercase to avoid case sensetive errors
         return word.ToUpper()
                     .Sum(letter => LetterValues.GetValueOrDefault(letter, 0));

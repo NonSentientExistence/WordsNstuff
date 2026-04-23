@@ -7,7 +7,7 @@ interface GameProps {
 }
 
 export default function Game({ onEnd }: GameProps) {
-  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage, playerName, opponentName } = useGame(onEnd)
+  const { game, word, setWord, submitted, message, timeLeft, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage, playerName, opponentName } = useGame(onEnd)
 
   if (!game) return <p>Loading game...</p>;
 
@@ -21,7 +21,6 @@ export default function Game({ onEnd }: GameProps) {
           <PlayerHealthIcon hp={myHp ?? 0} maxHp={100} size={80} showLabel={true} />
           <p>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>--${opponentLastDamage}-dmg--|>` : ''}</p>
         </div>
-
         <div className="player-section">
           <h2 style={{ color: "#F87402" }}>{opponentName}</h2>
           <PlayerHealthIcon hp={opponentHp ?? 0} maxHp={100} size={80} showLabel={true} />
@@ -37,6 +36,8 @@ export default function Game({ onEnd }: GameProps) {
           ))}
         </div>
       </div>
+
+      {!submitted && <p className="message">{timeLeft} seconds left</p>}
 
       <div className="word-input">
         <input
