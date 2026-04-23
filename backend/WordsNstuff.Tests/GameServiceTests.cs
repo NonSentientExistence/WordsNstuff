@@ -61,4 +61,23 @@ public class GameServiceTests
     _service.SubmitWord("DOESNTEXIST", "player1", "cat"));
     Assert.Null(exception);
     }
-}    
+
+    // Ensure skipping a word stores empty string for the player
+    [Fact]
+    public void SkipWord_StoresEmptyStringForPlayer()
+    {
+        _service.StartGame("ABC123", "player1", "player2");
+        _service.SkipWord("ABC123", "player1");
+        var game = _service.GetGame("ABC123");
+        Assert.Equal("", game!.Player1Word);
+    }
+
+    // Ensure SkipWord doesn't crash if the game doesn't exist
+    [Fact]
+    public void SkipWord_GameDoesntExist_DoesNotCrash()
+    {
+        var exception = Record.Exception(() =>
+            _service.SkipWord("DOESNTEXIST", "player1"));
+        Assert.Null(exception);
+    }
+}
