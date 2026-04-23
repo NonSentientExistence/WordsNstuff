@@ -76,7 +76,7 @@ app.MapGet("/api/games/{code}", (string code, GameService gameService) =>
     return Results.Ok(new
     {
         status = game.Status.ToString(),
-        pool = game.Pool,
+        pool = game.Pool.ToList(),
         player1Id = game.Player1.Id,
         player2Id = game.Player2.Id,
         player1Hp = game.Player1.Hp,
@@ -84,7 +84,8 @@ app.MapGet("/api/games/{code}", (string code, GameService gameService) =>
         player1LastWord = game.Player1LastWord,
         player2LastWord = game.Player2LastWord,
         player1LastDamage = game.Player1LastDamage,
-        player2LastDamage = game.Player2LastDamage
+        player2LastDamage = game.Player2LastDamage,
+        roundNumber = game.RoundNumber
     });
 });
 
@@ -119,6 +120,15 @@ app.MapPost("/api/lobbies/{code}/reset", (string code) =>
 {
     var reset = lobbyService.ResetLobby(code);
     return reset ? Results.Ok() : Results.BadRequest("Could not reset lobby");
+});
+
+//Skip round endpoint
+app.MapPost("/api/games/{code}/skip", (string code, HttpRequest request, GameService gameService) =>
+{
+    var token = request.Headers["X-Player-Token"].ToString();
+    if (string.IsNullOrEmpty(token)) return Results.BadRequest("Missing X-Player-Token");
+    gameService.SkipWord(code, token);
+    return Results.Ok();
 });
 
 app.UseDefaultFiles();

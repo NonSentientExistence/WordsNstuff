@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { getGame, submitWord } from '../api'
+import { getGame, submitWord, skipRound } from '../api'
 import { getPlayerToken } from '../playerToken'
 
 interface GameState {
@@ -14,6 +14,7 @@ interface GameState {
   player2LastWord: string | null
   player1LastDamage: number
   player2LastDamage: number
+  roundNumber: number
 }
 
 export interface GameStats {
@@ -25,17 +26,17 @@ export interface GameStats {
 }
 
 export function useGame(onEnd: (stats: GameStats) => void) {
-    const { code } = useParams<{ code: string }>()
-    const [game, setGame] = useState<GameState | null>(null)
-    const [word, setWord] = useState('')
-    const [submitted, setSubmitted] = useState(false)
-    const [message, setMessage] = useState('')
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const roundsRef = useRef(0)
-    const damageDealtRef = useRef(0)
-    const token = getPlayerToken()
-    const playerName = sessionStorage.getItem('playerName') || 'You'
-    
+  const { code } = useParams<{ code: string }>()
+  const [game, setGame] = useState<GameState | null>(null)
+  const [word, setWord] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [message, setMessage] = useState('')
+  const [timeLeft, setTimeLeft] = useState(30)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const roundsRef = useRef(0)
+  const damageDealtRef = useRef(0)
+  const submittedAtRef = useRef<number | null>(null)
+  const wordRef = useRef('')
 
   // Reset stats on mount to handle Play Again correctly
   useEffect(() => {
@@ -43,21 +44,75 @@ export function useGame(onEnd: (stats: GameStats) => void) {
     damageDealtRef.current = 0
   }, [])
 
+  // Keep wordRef in sync with word state
+  useEffect(() => {
+    wordRef.current = word
+  }, [word])
+
+  // Bypass submitted check so timer can always submit if a word is typed
+  const doSubmit = useCallback(async (currentWord: string) => {
+    if (!code || !currentWord.trim()) return
+    const { success, message: msg, damage } = await submitWord(code, currentWord.trim())
+    if (success) {
+      setSubmitted(true)
+      setMessage('Word submitted! Waiting for opponent...')
+      damageDealtRef.current += damage
+      setWord('')
+      wordRef.current = ''
+      submittedAtRef.current = Date.now()
+    } else {
+      setMessage(msg)
+    }
+  }, [code])
+
+  // Countdown timer, resets each round and auto submits or skips if runs out
+  useEffect(() => {
+    if (submitted) return
+
+    let count = 30
+
+    const timer = setInterval(() => {
+      setTimeLeft(count) // ← set display on every tick, including first
+      count -= 1
+      if (count < 0) {
+        clearInterval(timer)
+        if (wordRef.current.trim()) {
+          doSubmit(wordRef.current)
+          setWord('')
+        } else {
+          skipRound(code!)
+          setSubmitted(true)
+        }
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [submitted, code, doSubmit])
+
   // Poll game state every second
   useEffect(() => {
+    const token = getPlayerToken()
+    const playerName = sessionStorage.getItem('playerName') || 'You'
     intervalRef.current = setInterval(async () => {
       if (!code) return
       const data = await getGame(code)
       if (!data) return
-
-      // Reset submitted state when HP changes and increase round count
+      // Reset submitted state and increment round counter when a new round starts
       setGame(prev => {
-        if (prev && (prev.player1Hp !== data.player1Hp || prev.player2Hp !== data.player2Hp)) {
+        if (prev && prev.roundNumber !== data.roundNumber) {
           setSubmitted(false)
           roundsRef.current += 1
+          submittedAtRef.current = null
         }
         return data
       })
+
+      // Check if the opponent has timed out (35s since submit)
+      if (submittedAtRef.current && Date.now() - submittedAtRef.current > 35000) {
+        submittedAtRef.current = null
+        setSubmitted(false)
+        setMessage('Opponent timed out, submit a new word!')
+      }
 
       // Game is over, pass final stats
       if (data.status === 'Finished') {
@@ -72,32 +127,25 @@ export function useGame(onEnd: (stats: GameStats) => void) {
         })
       }
     }, 1000)
-    return () => clearInterval(intervalRef.current!)
+
+    return () => {
+      clearInterval(intervalRef.current!)
+    }
   }, [code, onEnd])
 
-
+  // Calls doSubmit
   const handleSubmit = async () => {
     if (!code || !word.trim() || submitted) return
-    const { success, message:msg, damage } = await submitWord(code, word.trim())
-    if (success) {
-      setSubmitted(true)
-      setMessage('Word submitted! Nice one!')
-      damageDealtRef.current += damage
-      setWord('')
-      setTimeout(() => setMessage(''), 3000)
-    } else {
-      setMessage(msg)  // Returned reason from backend
-    }
+    await doSubmit(word)
   }
 
-
+  const token = getPlayerToken()
   const myHp = game?.player1Id === token ? game?.player1Hp : game?.player2Hp
   const opponentHp = game?.player1Id === token ? game?.player2Hp : game?.player1Hp
-
   const myLastWord = game?.player1Id === token ? game?.player1LastWord : game?.player2LastWord
   const opponentLastWord = game?.player1Id === token ? game?.player2LastWord : game?.player1LastWord
   const myLastDamage = game?.player1Id === token ? game?.player1LastDamage : game?.player2LastDamage
   const opponentLastDamage = game?.player1Id === token ? game?.player2LastDamage : game?.player1LastDamage
 
-  return {game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage }
+  return { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, timeLeft, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage }
 }

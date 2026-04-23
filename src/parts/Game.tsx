@@ -7,21 +7,19 @@ interface GameProps {
 }
 
 export default function Game({ onEnd }: GameProps) {
-  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, myLastWord, opponentLastWord, myLastDamage , opponentLastDamage } = useGame(onEnd)
-
+  const { game, word, setWord, submitted, message, myHp, opponentHp, handleSubmit, timeLeft, myLastWord, opponentLastWord, myLastDamage, opponentLastDamage } = useGame(onEnd)
+  
   if (!game) return <p>Loading game...</p>;
-
+  
   return (
     <div>
-<h1>1v1 Battle To The Death</h1>
-
+      <h1>1v1 Battle To The Death</h1>
       <div className="health-display">
         <div className="player-section">
           <h2 style={{ color: "#025BD6"}}>You</h2>
           <PlayerHealthIcon hp={myHp ?? 0} maxHp={100} size={80} showLabel={true} />
           <p style={{ color: "#025BD6"}}>Your word: {myLastWord ?? '—'} {opponentLastDamage ? `>>--${opponentLastDamage}-dmg--|>` : ''}</p>
         </div>
-
         <div className="player-section">
           <h2 style={{ color: "#F87402"}}>Opponent</h2>
           <PlayerHealthIcon
@@ -33,7 +31,6 @@ export default function Game({ onEnd }: GameProps) {
           <p style={{ color: "#F87402"}}>Opponents word: {opponentLastWord ?? '—'} {myLastDamage ? `>>--${myLastDamage}-dmg--|>` : ''}</p>
         </div>
       </div>
-
       {/* Letter pool */}
       <div>
         <h2>Letter Pool</h2>
@@ -52,7 +49,8 @@ export default function Game({ onEnd }: GameProps) {
           ))}
         </div>
       </div>
-
+      {/* Timer */}
+      {!submitted && <p>{timeLeft} seconds left</p>}
       {/* Word input */}
       <div>
         <input
@@ -66,7 +64,6 @@ export default function Game({ onEnd }: GameProps) {
           {submitted ? "Waiting..." : "Submit Word"}
         </button>
       </div>
-
       {message && <p>{message}</p>}
     </div>
   );

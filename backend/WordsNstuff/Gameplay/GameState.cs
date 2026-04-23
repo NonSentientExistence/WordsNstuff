@@ -1,10 +1,12 @@
 public class GameState
 {
+    public readonly object Lock = new();
     public string GameId { get; }
     public Player Player1 { get; }
     public Player Player2 { get; }
     public List<char> Pool { get; }
     public GameStatus Status { get; set; }
+    public int RoundNumber { get; set; } = 0;
 
     // Holds player words, starts at null
     public string? Player1Word { get; set; }
