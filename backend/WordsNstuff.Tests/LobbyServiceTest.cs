@@ -114,6 +114,21 @@ public class LobbyServiceTest : IDisposable
     }
 
     [Fact]
+    public void ResetLobby_ClearsPlayer2Name()
+    {
+        var code = _service.CreateLobby("token-1");
+        _service.JoinLobby(code, "token-2", "Player Two");
+        _service.ResetLobby(code);
+
+        using var connection = Database.GetConnection();
+        var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT Player2Name FROM Lobbies WHERE Code = @code";
+        cmd.Parameters.AddWithValue("@code", code);
+        var name = cmd.ExecuteScalar();
+        Assert.True(name is null || name == DBNull.Value);
+    }
+
+    [Fact]
     public void GetPlayerTokens_ReturnsCorrectTokens()
     {
         var code = _service.CreateLobby("token-1");

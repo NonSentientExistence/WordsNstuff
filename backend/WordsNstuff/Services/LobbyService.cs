@@ -108,7 +108,7 @@ public class LobbyService
         var cmd = connection.CreateCommand();
         cmd.CommandText = @"
             UPDATE Lobbies 
-            SET Status = 'waiting', Player2Token = NULL
+            SET Status = 'waiting', Player2Token = NULL, Player2Name = NULL
             WHERE Code = @code";
         cmd.Parameters.AddWithValue("@code", code);
         return cmd.ExecuteNonQuery() > 0;
