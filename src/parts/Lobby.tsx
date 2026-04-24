@@ -12,29 +12,29 @@ export default function Lobby({ onStart }: LobbyProps) {
       {!playerName && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h2>Vad heter du?</h2>
+            <h2>What's your name?</h2>
             <input
               type="text"
-              placeholder="Skriv in ditt namn"
+              placeholder="Enter your name"
               value={nameInput}
               onChange={e => setNameInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
               autoFocus
             />
-            <button onClick={handleSubmitName}>Bekräfta</button>
+            <button onClick={handleSubmitName}>Confirm</button>
           </div>
         </div>
       )}
       <div className="card">
         <h1>Lobby: <span className="lobby-code">{code}</span></h1>
         <div className="lobby-info">
-          <p>Dela denna länk: <strong>{link}</strong></p>
-          <p>Spelare: {playerCount}/2</p>
-          {playerCount === null && <p>Laddar...</p>}
-          {playerCount !== null && playerCount < 2 && <p>Väntar på motståndare...</p>}
+          <p>Share this link: <strong>{link}</strong></p>
+          <p>Players: {playerCount}/2</p>
+          {playerCount === null && <p>Loading...</p>}
+          {playerCount !== null && playerCount < 2 && <p>Waiting for opponent...</p>}
         </div>
         {playerCount === 2 && status === 'ready' && playerName && (
-          <button onClick={handleStart}>Starta spel</button>
+          <button onClick={handleStart}>Start Game</button>
         )}
       </div>
     </div>
