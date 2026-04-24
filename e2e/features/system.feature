@@ -1,9 +1,9 @@
 Feature: Smoke-test
 
-    Scenario: Startsidan går att öppna
-        Given att jag öppnar startsidan
-        Then ska jag se en rubrik på nivå 1 på sidan
+    Scenario: Home page can be opened
+        Given I open the main page
+        Then I shall see a level 1 heading on the page
 
-    Scenario: API:et svarar via proxyn
-        Given att jag öppnar "/api/hello" i webbläsaren
-        Then ska jag se texten "Hello from .NET!"
+    Scenario: The API responds via the proxy
+        Given I open "/api/hello" in the browser
+        Then I shall see the text "Hello from .NET!"

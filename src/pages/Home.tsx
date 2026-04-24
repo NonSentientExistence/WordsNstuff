@@ -21,18 +21,19 @@ export default function Home() {
 
   return (
     <div>
-      <Header title='WordsNstuff' subtitle='Arenan där två spelare möts i ordstrider — bygg starka ord, krossa motståndaren.' />
+      <Header title='WordsNstuff' subtitle='The arena where two players meet in word battles — build strong words, crush your opponent.' />
       <div className="page-wrapper">
         <div className="card">
-          <button onClick={handleCreate}>Skapa lobby</button>
-          <h2>Eller gå med i en lobby</h2>
+          <h2>Create a new lobby</h2>
+          <button onClick={handleCreate}>Create Lobby</button>
+          <h2>Join existing lobby</h2>
           <input
             type="text"
-            placeholder="Skriv in lobbykod"
+            placeholder="Enter lobby code"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value)}
           />
-          <button onClick={handleJoin}>Gå med</button>
+          <button onClick={handleJoin}>Join</button>
         </div>
       </div>
     </div>

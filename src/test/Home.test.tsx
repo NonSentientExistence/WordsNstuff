@@ -22,19 +22,19 @@ describe('Home', () => {
     vi.restoreAllMocks()
   })
 
-  it('visar skapa lobby-knapp', () => {
+  it('shows create lobby button', () => {
     render(<MemoryRouter><Home /></MemoryRouter>)
-    expect(screen.getByText('Skapa lobby')).toBeInTheDocument()
+    expect(screen.getByText('Create Lobby')).toBeInTheDocument()
   })
 
-  it('visar input för lobbykod', () => {
+  it('shows lobby code input', () => {
     render(<MemoryRouter><Home /></MemoryRouter>)
-    expect(screen.getByPlaceholderText('Skriv in lobbykod')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter lobby code')).toBeInTheDocument()
   })
 
-  it('anropar API och navigerar till lobby vid klick på Skapa lobby', async () => {
+  it('calls API and navigates to lobby on Create Lobby click', async () => {
     render(<MemoryRouter><Home /></MemoryRouter>)
-    fireEvent.click(screen.getByText('Skapa lobby'))
+    fireEvent.click(screen.getByText('Create Lobby'))
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
         '/api/lobbies',
@@ -44,18 +44,18 @@ describe('Home', () => {
     })
   })
 
-  it('navigerar till lobbykod med Gå med-knappen', () => {
+  it('navigates to lobby code with Join button', () => {
     render(<MemoryRouter><Home /></MemoryRouter>)
-    fireEvent.change(screen.getByPlaceholderText('Skriv in lobbykod'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter lobby code'), {
       target: { value: 'xyz789' }
     })
-    fireEvent.click(screen.getByText('Gå med'))
+    fireEvent.click(screen.getByText('Join'))
     expect(mockNavigate).toHaveBeenCalledWith('/play/XYZ789')
   })
 
-  it('Gå med gör ingenting om lobbykod är tom', () => {
+  it('Join does nothing if lobby code is empty', () => {
     render(<MemoryRouter><Home /></MemoryRouter>)
-    fireEvent.click(screen.getByText('Gå med'))
+    fireEvent.click(screen.getByText('Join'))
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 })
