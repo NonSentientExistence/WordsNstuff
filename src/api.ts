@@ -7,7 +7,7 @@ function headers() {
   }
 }
 
-export async function createLobby(name = 'Anonym'): Promise<string> {
+export async function createLobby(name = 'Anonymous'): Promise<string> {
   const res = await fetch('/api/lobbies', {
     method: 'POST',
     headers: headers(),
@@ -17,7 +17,7 @@ export async function createLobby(name = 'Anonym'): Promise<string> {
   return data.code
 }
 
-export async function joinLobby(code: string, name = 'Anonym'): Promise<boolean> {
+export async function joinLobby(code: string, name = 'Anonymous'): Promise<boolean> {
   const res = await fetch(`/api/lobbies/${code}/join`, {
     method: 'POST',
     headers: headers(),

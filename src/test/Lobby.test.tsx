@@ -27,42 +27,42 @@ describe('Lobby', () => {
     vi.restoreAllMocks()
   })
 
-  it('visar lobbykoden', async () => {
+  it('shows the lobby code', async () => {
     renderLobby()
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('XYZ789')
   })
 
-  it('visar väntar på motståndare', async () => {
+  it('shows waiting for opponent', async () => {
     vi.useFakeTimers()
     renderLobby()
     await act(async () => { vi.advanceTimersByTime(1000) })
-    expect(screen.getByText(/Väntar på motståndare/)).toBeInTheDocument()
+    expect(screen.getByText(/Waiting for opponent/)).toBeInTheDocument()
     vi.useRealTimers()
   })
 
-  it('visar namn-popup när inget namn är satt', () => {
+  it('shows name popup when no name is set', () => {
     renderLobby()
-    expect(screen.getByPlaceholderText('Skriv in ditt namn')).toBeInTheDocument()
-    expect(screen.getByText('Vad heter du?')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter your name')).toBeInTheDocument()
+    expect(screen.getByText("What's your name?")).toBeInTheDocument()
   })
 
-  it('stänger popup och sparar namn när bekräfta klickas', () => {
+  it('closes popup and saves name when Confirm is clicked', () => {
     renderLobby()
-    fireEvent.change(screen.getByPlaceholderText('Skriv in ditt namn'), {
+    fireEvent.change(screen.getByPlaceholderText('Enter your name'), {
       target: { value: 'Testspelaren' }
     })
-    fireEvent.click(screen.getByText('Bekräfta'))
-    expect(screen.queryByText('Vad heter du?')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('Confirm'))
+    expect(screen.queryByText("What's your name?")).not.toBeInTheDocument()
     expect(sessionStorage.getItem('playerName')).toBe('Testspelaren')
   })
 
-  it('visar inte popup när namn redan finns i sessionStorage', () => {
+  it('does not show popup when name already exists in sessionStorage', () => {
     sessionStorage.setItem('playerName', 'Befintligt namn')
     renderLobby()
-    expect(screen.queryByPlaceholderText('Skriv in ditt namn')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Enter your name')).not.toBeInTheDocument()
   })
 
-  it('visar inte starta-knappen utan namn även när lobby är redo', async () => {
+  it('does not show start button without a name even when lobby is ready', async () => {
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -70,11 +70,11 @@ describe('Lobby', () => {
     } as Response)
     renderLobby()
     await act(async () => { vi.advanceTimersByTime(1000) })
-    expect(screen.queryByText('Starta spel')).not.toBeInTheDocument()
+    expect(screen.queryByText('Start Game')).not.toBeInTheDocument()
     vi.useRealTimers()
   })
 
-  it('visar starta-knappen när namn är satt och lobby är redo', async () => {
+  it('shows start button when name is set and lobby is ready', async () => {
     sessionStorage.setItem('playerName', 'Testspelaren')
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -83,11 +83,11 @@ describe('Lobby', () => {
     } as Response)
     renderLobby()
     await act(async () => { vi.advanceTimersByTime(1000) })
-    expect(screen.getByText('Starta spel')).toBeInTheDocument()
+    expect(screen.getByText('Start Game')).toBeInTheDocument()
     vi.useRealTimers()
   })
 
-  it('kraschar inte och visar lobby när API svarar med fel (500)', async () => {
+  it('does not crash and shows lobby when API responds with error (500)', async () => {
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
@@ -95,12 +95,11 @@ describe('Lobby', () => {
     } as unknown as Response)
     renderLobby()
     await act(async () => { vi.advanceTimersByTime(1000) })
-    // Appen ska inte krascha – lobbykoden visas fortfarande
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
     vi.useRealTimers()
   })
 
-  it('visar laddnings-text när lobby-API svarar med fel', async () => {
+  it('shows loading text when lobby API responds with error', async () => {
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
@@ -108,8 +107,7 @@ describe('Lobby', () => {
     } as unknown as Response)
     renderLobby()
     await act(async () => { vi.advanceTimersByTime(1000) })
-    // Lobbyn visar "Laddar..." när data inte kan hämtas
-    expect(screen.getByText(/Laddar\.\.\./)).toBeInTheDocument()
+    expect(screen.getByText(/Loading\.\.\./)).toBeInTheDocument()
     vi.useRealTimers()
   })
 })

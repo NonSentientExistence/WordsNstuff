@@ -3,13 +3,13 @@ import { describe, it, expect } from 'vitest'
 import App from '../App'
 
 describe('App', () => {
-  it('visar startsidan med rubrik', () => {
+  it('shows the home page heading', () => {
     render(<App />)
     expect(screen.getByText('WordsNstuff')).toBeInTheDocument()
   })
 
-  it('visar skapa lobby-knapp', () => {
+  it('shows create lobby button', () => {
     render(<App />)
-    expect(screen.getByText('Skapa lobby')).toBeInTheDocument()
+    expect(screen.getByText('Create Lobby')).toBeInTheDocument()
   })
 })

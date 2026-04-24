@@ -172,36 +172,55 @@ input:not([type]):focus {
   align-items: center;
 }
 
+/* ← nya regler */
+.card button,
+.card input[type="text"],
+.card input:not([type]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card input[type="text"]::placeholder,
+.card input:not([type])::placeholder {
+  text-align: center;
+}
+
 .site-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 36px 24px 20px;
-  gap: 6px;
+  padding: 40px 24px 28px;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .site-header img {
   height: 130px;
   width: auto;
-  filter: drop-shadow(0 4px 24px rgba(2, 91, 214, 0.45));
+  filter: drop-shadow(0 4px 32px rgba(2, 91, 214, 0.55));
 }
 
 .site-header h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-h);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   margin: 0;
+  background: linear-gradient(135deg, var(--primary-light), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-shadow: none;
-  letter-spacing: 0;
 }
 
 .site-header h2 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--text-muted);
   margin: 0;
+  max-width: 480px;
+  line-height: 1.6;
 }
 
 .lobby-code {
@@ -271,9 +290,59 @@ input:not([type]):focus {
   border: 1px solid var(--border);
   padding: 2rem 2.5rem;
   border-radius: 20px;
-  min-width: 320px;
+  min-width: min(320px, calc(100vw - 32px));
+  width: min(400px, calc(100vw - 32px));
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   box-shadow: var(--shadow);
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 28px;
+  }
+
+  .site-header {
+    padding: 24px 16px 18px;
+    gap: 8px;
+  }
+
+  .site-header img {
+    height: 80px;
+  }
+
+  .site-header h1 {
+    font-size: 24px;
+  }
+
+  .page-wrapper {
+    padding: 20px 16px 32px;
+  }
+
+  .card {
+    padding: 24px 20px;
+  }
+
+  .card input[type="text"],
+  .card input:not([type]) {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .popup-box {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .stats-card {
+    padding: 20px 24px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .finished-title-win,
+  .finished-title-lose {
+    font-size: 36px;
+  }
 }

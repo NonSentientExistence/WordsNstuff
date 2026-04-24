@@ -1,6 +1,6 @@
 Feature: Lobby
 
-    Scenario: Skapa en lobby
-        Given att jag öppnar startsidan
-        When jag klickar på "Skapa lobby"
-        Then ska jag se en lobbykod på sidan
+    Scenario: Create a lobby
+        Given I open the main page
+        When I press "Create Lobby"
+        Then I shall see a lobby code
